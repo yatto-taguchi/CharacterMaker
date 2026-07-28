@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Character Model Sheet Creator</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <!-- 背景のグラデーション装飾 -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div class="app-container">
+    <!-- ヘッダー -->
+    <header class="app-header">
+      <div class="logo-area">
+        <i data-lucide="layers" class="icon-logo"></i>
+        <h1>CHAR-MODEL <span>// SHEET CREATOR</span></h1>
+      </div>
+      <div class="status-area" style="display: flex; gap: 12px; align-items: center;">
+        <button id="btn-reload-images" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; background: rgba(0, 240, 255, 0.1); color: var(--accent-cyan); border-color: rgba(0, 240, 255, 0.2);">
+          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> 画像を更新
+        </button>
+        <span id="save-status" class="status-badge">
+          <i data-lucide="cloud-check"></i> 保存済み
+        </span>
+      </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="app-main">
+      <!-- 左カラム: マルチポーズ・グリッドエリア -->
+      <section class="preview-section card">
+        <div class="card-header">
+          <h2><i data-lucide="grid"></i> キャラクターポーズ・グリッド</h2>
+          <div class="aspect-ratio-selector">
+            <button class="btn-aspect active" data-ratio="3-4" title="バストアップ (3:4)">3:4</button>
+            <button class="btn-aspect" data-ratio="9-16" title="全身/立ち絵 (9:16)">9:16</button>
+            <button class="btn-aspect" data-ratio="1-1" title="スクエア (1:1)">1:1</button>
+          </div>
+        </div>
+
+        <div class="grid-hint">
+          <i data-lucide="mouse-pointer-click"></i> 画像をクリックして選択し、ドラッグ＆スライダーで個別にフレーミング調整できます
+        </div>
+
+        <!-- ダイナミック・ギャラリー・グリッド -->
+        <div id="gallery-grid-container" class="poses-grid-container">
+          <!-- JavaScriptでサムネイルがここに生成されます -->
+        </div>
+
+        <!-- アクティブスロットのコントロール群 -->
+        <div class="controls-container">
+          <div class="control-row">
+            <label for="zoom-slider"><i data-lucide="zoom-in"></i> ズーム (<span id="active-slot-name">Slot 1</span>)</label>
+            <input type="range" id="zoom-slider" min="0.2" max="4" step="0.01" value="1.0">
+            <span id="zoom-value">100%</span>
+          </div>
+
+          <div class="control-actions">
+            <button id="btn-reset" class="btn btn-secondary">
+              <i data-lucide="rotate-ccw"></i> 選択画像をリセット
+            </button>
+            <div class="file-uploader">
+              <label for="file-input" class="btn btn-outline">
+                <i data-lucide="upload"></i> 選択スロットの画像を差替
+              </label>
+              <input type="file" id="file-input" accept="image/*" style="display: none;">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 着せ替え＆アイテム選択スタジオ -->
+      <section class="dressup-studio card">
+        <div class="dressup-header">
+          <h3>Dress-Up & Props Studio</h3>
+        </div>
+        
+        <div class="dressup-category">
+          <h4>髪型 (Hair Style)</h4>
+          <div class="dressup-tags" data-category="hairstyle">
+            <span class="dressup-tag" data-tag="hair-long-wavy">ロングウェーブ (基本)</span>
+            <span class="dressup-tag" data-tag="hair-short-bob">ショートボブ</span>
+            <span class="dressup-tag" data-tag="hair-ponytail">ポニーテール</span>
+            <span class="dressup-tag" data-tag="hair-twintails">ツインテール</span>
+            <span class="dressup-tag" data-tag="hair-straight-long">ストレートロング</span>
+            <span class="dressup-tag" data-tag="hair-bun">お団子ヘア</span>
+            <span class="dressup-tag" data-tag="hair-braid">三つ編み</span>
+          </div>
+        </div>
+
+        <div class="dressup-category">
+          <h4>髪色 (Hair Color)</h4>
+          <div class="dressup-tags" data-category="haircolor">
+            <span class="dressup-tag" data-tag="color-light-pink">ライトピンク (基本)</span>
+            <span class="dressup-tag" data-tag="color-ash-gray">アッシュグレー</span>
+            <span class="dressup-tag" data-tag="color-blonde">プラチナブロンド</span>
+            <span class="dressup-tag" data-tag="color-black">黒髪</span>
+            <span class="dressup-tag" data-tag="color-pink-purple-grad">ピンク〜紫グラデーション</span>
+            <span class="dressup-tag" data-tag="color-inner-blue">インナーカラー (ブルー)</span>
+            <span class="dressup-tag" data-tag="color-mint-green">ミントグリーン</span>
+          </div>
+        </div>
+        
+        <div class="dressup-category">
+          <h4>トップス</h4>
+          <div class="dressup-tags" data-category="tops">
+            <span class="dressup-tag" data-tag="tshirt">Tシャツ</span>
+            <span class="dressup-tag" data-tag="blouse">ブラウス</span>
+            <span class="dressup-tag" data-tag="knit">リブニット</span>
+            <span class="dressup-tag" data-tag="sheer">シアーシャツ</span>
+            <span class="dressup-tag" data-tag="mode">モード系（黒）</span>
+          </div>
+        </div>
+
+        <div class="dressup-category">
+          <h4>ボトムス・スタイル</h4>
+          <div class="dressup-tags" data-category="bottoms">
+            <span class="dressup-tag" data-tag="casual">カジュアル</span>
+            <span class="dressup-tag" data-tag="pants">パンツスタイル</span>
+            <span class="dressup-tag" data-tag="skirt">スカート</span>
+          </div>
+        </div>
+
+        <div class="dressup-category">
+          <h4>エプロン (美容師)</h4>
+          <div class="dressup-tags" data-category="apron">
+            <span class="dressup-tag" data-tag="no-apron">エプロンなし</span>
+            <span class="dressup-tag" data-tag="black-apron">黒エプロン</span>
+            <span class="dressup-tag" data-tag="beige-apron">ベージュ</span>
+            <span class="dressup-tag" data-tag="denim-apron">デニム</span>
+          </div>
+        </div>
+
+        <div class="dressup-category">
+          <h4>アイテム・ポーズ</h4>
+          <div class="dressup-tags" data-category="props">
+            <span class="dressup-tag" data-tag="normal">標準（立ち姿）</span>
+            <span class="dressup-tag" data-tag="scissor-case">シザーケース</span>
+            <span class="dressup-tag" data-tag="smartphone">スマホ操作</span>
+            <span class="dressup-tag" data-tag="color-cup">カラーカップを持つ</span>
+            <span class="dressup-tag" data-tag="chart-writing">カルテ記入で悩む</span>
+            <span class="dressup-tag" data-tag="wasting-money">お金を流して嘆く</span>
+            <span class="dressup-tag" data-tag="holding-200g">200gの文字を持つ</span>
+            <span class="dressup-tag" data-tag="sit-cross">ミニスカート（脚組み）</span>
+            <span class="dressup-tag" data-tag="sit-knees">ミニスカート（膝揃え）</span>
+            <span class="dressup-tag" data-tag="sit-relax">ミニスカート（リラックス）</span>
+          </div>
+        </div>
+
+        <!-- カスタムプロンプトビルダー -->
+        <div class="custom-prompt-section">
+          <h4><i data-lucide="edit-3"></i> AIへのカスタム指示</h4>
+          
+          <div class="design-toggle-group">
+            <label class="design-toggle-label">
+              <input type="radio" name="design-spec" value="fixed" checked>
+              今までと同じデザインで生成（指定を完全再現）
+            </label>
+            <label class="design-toggle-label">
+              <input type="radio" name="design-spec" value="random">
+              デザインはおまかせで生成（形状や柄をランダムに変更）
+            </label>
+          </div>
+
+          <div class="custom-input-group">
+            <div class="custom-input-row">
+              <label for="prompt-count">生成枚数</label>
+              <select id="prompt-count">
+                <option value="1">1枚</option>
+                <option value="2">2枚</option>
+                <option value="3">3枚</option>
+                <option value="4">4枚</option>
+                <option value="5">5枚</option>
+              </select>
+            </div>
+            <div class="custom-input-row">
+              <label for="prompt-scene">シーン (場面)</label>
+              <input type="text" id="prompt-scene" placeholder="例: 営業終了後の美容室、休日のカフェ など">
+            </div>
+            <div class="custom-input-row">
+              <label for="prompt-action">させたい動作</label>
+              <input type="text" id="prompt-action" placeholder="例: コーヒーを飲んでホッとしている など">
+            </div>
+            <div class="custom-input-row">
+              <label for="prompt-bg">背景</label>
+              <input type="text" id="prompt-bg" placeholder="例: おしゃれなレンガ調の壁、夕焼け など">
+            </div>
+          </div>
+        </div>
+
+        <!-- AIプロンプトメッセージ表示エリア -->
+        <div id="ai-prompt-msg" class="ai-prompt-msg">
+          <p>💡 この組み合わせの画像はまだありません。<br>以下の依頼文をコピーして、AIチャットでお願いしてください！</p>
+          <div id="ai-prompt-text" class="ai-prompt-text" contenteditable="true"></div>
+        </div>
+      </section>
+
+      <!-- 右カラム: キャラクター情報とシートエクスポート -->
+      <section class="info-section card">
+        <div class="card-header">
+          <h2><i data-lucide="file-text"></i> シート設定 & メタデータ</h2>
+        </div>
+
+        <form id="profile-form" class="profile-form">
+          <!-- キャラクター名 / シート名 -->
+          <div class="form-group name-group">
+            <label for="char-name">キャラクター名 / シートタイトル</label>
+            <input type="text" id="char-name" placeholder="例: Pink Hair Girl (モデルシート)" required autocomplete="off" value="Pink Hair Character">
+          </div>
+
+          <!-- クイックタグ -->
+          <div class="form-group">
+            <label for="char-tags">タグ (カンマ区切りでシート下部に印刷)</label>
+            <input type="text" id="char-tags" placeholder="例: Pink Hair, Soft Watercolor, Character Design Sheet" autocomplete="off" value="Pink Hair, Soft Watercolor, Multi-Pose, Character Sheet">
+            <div id="tags-preview" class="tags-container"></div>
+          </div>
+
+          <!-- 詳細属性グリッド -->
+          <div class="attributes-grid">
+            <div class="form-group">
+              <label for="attr-hair">髪色・特徴</label>
+              <input type="text" id="attr-hair" placeholder="例: ライトピンク、ウェーブロング" autocomplete="off" value="Light Pink, Wavy Long">
+            </div>
+            <div class="form-group">
+              <label for="attr-eyes">目の色・特徴</label>
+              <input type="text" id="attr-eyes" placeholder="例: 笑顔、優しげな目元" autocomplete="off" value="Gentle Smile">
+            </div>
+          </div>
+
+          <!-- 設定メモ -->
+          <div class="form-group memo-group">
+            <label for="char-memo">キャラクターデザイン設定メモ</label>
+            <textarea id="char-memo" rows="4" placeholder="AI読み込み用の追加プロンプトや、デザイン上の一貫性を保つための注意書きを入力してください...">Soft watercolor style. Wavy light pink long hair. Gentle and happy expressions. Height: ~160cm.</textarea>
+          </div>
+
+          <!-- エクスポートとセーブのアクション -->
+          <div class="sheet-actions">
+            <button type="submit" class="btn btn-secondary btn-block">
+              <i data-lucide="save"></i> 設定データを保存
+            </button>
+            
+            <button type="button" id="btn-export" class="btn btn-primary btn-block btn-lg">
+              <i data-lucide="download-cloud"></i> モデルシート画像をエクスポート
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- 非表示のキャンバス (画像結合用) -->
+  <canvas id="export-canvas" style="display: none;"></canvas>
+
+  <!-- Lightbox Modal (拡大表示・ダウンロード用) -->
+  <div id="lightbox-modal" class="lightbox-modal" style="display: none;">
+    <div class="lightbox-overlay" id="lightbox-overlay"></div>
+    <div class="lightbox-content">
+      <button id="lightbox-close" class="lightbox-close" title="閉じる"><i data-lucide="x"></i></button>
+      <div class="lightbox-image-container">
+        <img id="lightbox-img" src="" alt="Enlarged view">
+      </div>
+      <div class="lightbox-actions">
+        <button id="btn-lightbox-download" class="btn btn-primary btn-lg">
+          <i data-lucide="download"></i> 画像をダウンロード
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="app.js" type="module"></script>
+</body>
+</html>
