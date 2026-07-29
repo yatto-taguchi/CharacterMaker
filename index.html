@@ -49,7 +49,7 @@
         </div>
 
         <div class="grid-hint">
-          <i data-lucide="mouse-pointer-click"></i> 画像をクリックして選択し、ドラッグ＆スライダーで個別にフレーミング調整できます
+          <i data-lucide="mouse-pointer-click"></i> 画像をクリックして選択し、ドラッグ＆スライダーで個別にフレーミング調整できます。
         </div>
 
         <!-- ダイナミック・ギャラリー・グリッド -->
@@ -82,78 +82,346 @@
       <!-- 着せ替え＆アイテム選択スタジオ -->
       <section class="dressup-studio card">
         <div class="dressup-header">
-          <h3>Dress-Up & Props Studio</h3>
+          <h3><i data-lucide="scissors"></i> Dress-Up & Props Studio</h3>
         </div>
-        
-        <div class="dressup-category">
-          <h4>髪型 (Hair Style)</h4>
-          <div class="dressup-tags" data-category="hairstyle">
-            <span class="dressup-tag" data-tag="hair-long-wavy">ロングウェーブ (基本)</span>
-            <span class="dressup-tag" data-tag="hair-short-bob">ショートボブ</span>
-            <span class="dressup-tag" data-tag="hair-ponytail">ポニーテール</span>
-            <span class="dressup-tag" data-tag="hair-twintails">ツインテール</span>
-            <span class="dressup-tag" data-tag="hair-straight-long">ストレートロング</span>
-            <span class="dressup-tag" data-tag="hair-bun">お団子ヘア</span>
-            <span class="dressup-tag" data-tag="hair-braid">三つ編み</span>
+        <p class="section-desc" style="margin-bottom: 12px;">キャラクターの服装、髪型、ポーズなどを細かく指定できます。</p>
+        <div style="margin-bottom: 20px;">
+          <button id="clear-all-tags-btn" class="btn btn-secondary" style="width: 100%;"><i data-lucide="trash-2"></i> 全てのタグ選択をクリア</button>
+        </div>
+
+        <div class="dressup-category accordion open">
+          <div class="accordion-header">
+            <h4>生成枚数 (Count)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div id="prompt-count-tags" class="dressup-tags" style="margin-bottom: 0;">
+              <span class="dressup-tag" data-count="1">1枚</span>
+              <span class="dressup-tag" data-count="2">2枚</span>
+              <span class="dressup-tag" data-count="3">3枚</span>
+              <span class="dressup-tag" data-count="4">4枚</span>
+              <span class="dressup-tag" data-count="5">5枚</span>
+              <span class="dressup-tag" data-count="6">6枚</span>
+              <span class="dressup-tag" data-count="7">7枚</span>
+              <span class="dressup-tag" data-count="8">8枚</span>
+              <span class="dressup-tag" data-count="9">9枚</span>
+              <span class="dressup-tag" data-count="10">10枚</span>
+            </div>
           </div>
         </div>
 
-        <div class="dressup-category">
-          <h4>髪色 (Hair Color)</h4>
-          <div class="dressup-tags" data-category="haircolor">
-            <span class="dressup-tag" data-tag="color-light-pink">ライトピンク (基本)</span>
-            <span class="dressup-tag" data-tag="color-ash-gray">アッシュグレー</span>
-            <span class="dressup-tag" data-tag="color-blonde">プラチナブロンド</span>
-            <span class="dressup-tag" data-tag="color-black">黒髪</span>
-            <span class="dressup-tag" data-tag="color-pink-purple-grad">ピンク〜紫グラデーション</span>
-            <span class="dressup-tag" data-tag="color-inner-blue">インナーカラー (ブルー)</span>
-            <span class="dressup-tag" data-tag="color-mint-green">ミントグリーン</span>
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>髪型 (Hair Style)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
           </div>
-        </div>
-        
-        <div class="dressup-category">
-          <h4>トップス</h4>
-          <div class="dressup-tags" data-category="tops">
-            <span class="dressup-tag" data-tag="tshirt">Tシャツ</span>
-            <span class="dressup-tag" data-tag="blouse">ブラウス</span>
-            <span class="dressup-tag" data-tag="knit">リブニット</span>
-            <span class="dressup-tag" data-tag="sheer">シアーシャツ</span>
-            <span class="dressup-tag" data-tag="mode">モード系（黒）</span>
-          </div>
-        </div>
-
-        <div class="dressup-category">
-          <h4>ボトムス・スタイル</h4>
-          <div class="dressup-tags" data-category="bottoms">
-            <span class="dressup-tag" data-tag="casual">カジュアル</span>
-            <span class="dressup-tag" data-tag="pants">パンツスタイル</span>
-            <span class="dressup-tag" data-tag="skirt">スカート</span>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="hairstyle">
+              <span class="dressup-tag dressup-tag-random" data-tag="hair-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="hair-long-wavy">ロングウェーブ (基本)</span>
+              <span class="dressup-tag" data-tag="hair-short-bob">ショートボブ</span>
+              <span class="dressup-tag" data-tag="hair-ponytail">ポニーテール</span>
+              <span class="dressup-tag" data-tag="hair-twintails">ツインテール</span>
+              <span class="dressup-tag" data-tag="hair-straight-long">ストレートロング</span>
+              <span class="dressup-tag" data-tag="hair-bun">お団子ヘア</span>
+              <span class="dressup-tag" data-tag="hair-braid">三つ編み</span>
+              <span class="dressup-tag" data-tag="hair-hime">姫カット</span>
+              <span class="dressup-tag" data-tag="hair-wolf">ウルフカット</span>
+              <span class="dressup-tag" data-tag="hair-mushroom">マッシュルームヘア</span>
+              <span class="dressup-tag" data-tag="hair-halfup">ハーフアップ</span>
+              <span class="dressup-tag" data-tag="hair-veryshort">ベリーショート</span>
+              <span class="dressup-tag" data-tag="hair-messybun">無造作お団子</span>
+              <span class="dressup-tag" data-tag="hair-sidetail">サイドテール</span>
+              <span class="dressup-tag" data-tag="hair-curly">カーリーヘア</span>
+            </div>
           </div>
         </div>
 
-        <div class="dressup-category">
-          <h4>エプロン (美容師)</h4>
-          <div class="dressup-tags" data-category="apron">
-            <span class="dressup-tag" data-tag="no-apron">エプロンなし</span>
-            <span class="dressup-tag" data-tag="black-apron">黒エプロン</span>
-            <span class="dressup-tag" data-tag="beige-apron">ベージュ</span>
-            <span class="dressup-tag" data-tag="denim-apron">デニム</span>
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>前髪 (Bangs)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="bangs">
+              <span class="dressup-tag dressup-tag-random" data-tag="bangs-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="bangs-blunt">ぱっつん</span>
+              <span class="dressup-tag" data-tag="bangs-parted">センター分け</span>
+              <span class="dressup-tag" data-tag="bangs-swept">流し前髪</span>
+              <span class="dressup-tag" data-tag="bangs-seethrough">シースルー</span>
+              <span class="dressup-tag" data-tag="bangs-up">かき上げ</span>
+              <span class="dressup-tag" data-tag="bangs-asym">アシメ</span>
+            </div>
           </div>
         </div>
 
-        <div class="dressup-category">
-          <h4>アイテム・ポーズ</h4>
-          <div class="dressup-tags" data-category="props">
-            <span class="dressup-tag" data-tag="normal">標準（立ち姿）</span>
-            <span class="dressup-tag" data-tag="scissor-case">シザーケース</span>
-            <span class="dressup-tag" data-tag="smartphone">スマホ操作</span>
-            <span class="dressup-tag" data-tag="color-cup">カラーカップを持つ</span>
-            <span class="dressup-tag" data-tag="chart-writing">カルテ記入で悩む</span>
-            <span class="dressup-tag" data-tag="wasting-money">お金を流して嘆く</span>
-            <span class="dressup-tag" data-tag="holding-200g">200gの文字を持つ</span>
-            <span class="dressup-tag" data-tag="sit-cross">ミニスカート（脚組み）</span>
-            <span class="dressup-tag" data-tag="sit-knees">ミニスカート（膝揃え）</span>
-            <span class="dressup-tag" data-tag="sit-relax">ミニスカート（リラックス）</span>
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>髪色・特徴 (Hair Color)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="haircolor">
+              <span class="dressup-tag dressup-tag-random" data-tag="color-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="color-pink">ピンク系</span>
+              <span class="dressup-tag" data-tag="color-brown">ブラウン系</span>
+              <span class="dressup-tag" data-tag="color-black">黒髪</span>
+              <span class="dressup-tag" data-tag="color-blonde">金髪・ブロンド</span>
+              <span class="dressup-tag" data-tag="color-silver">シルバー・アッシュ</span>
+              <span class="dressup-tag" data-tag="color-gradient">グラデーションカラー</span>
+              <span class="dressup-tag" data-tag="color-inner">インナーカラー</span>
+              <span class="dressup-tag" data-tag="color-mesh">メッシュ・ハイライト</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>服装・トップス (Tops)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="tops">
+              <span class="dressup-tag dressup-tag-random" data-tag="random-top">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="tshirt">Tシャツ</span>
+              <span class="dressup-tag" data-tag="blouse">ブラウス</span>
+              <span class="dressup-tag" data-tag="knit">ニット</span>
+              <span class="dressup-tag" data-tag="sheer">シアートップス</span>
+              <span class="dressup-tag" data-tag="mode">モード系トップス</span>
+              <span class="dressup-tag" data-tag="casual">カジュアルシャツ</span>
+              <span class="dressup-tag" data-tag="hoodie">パーカー</span>
+              <span class="dressup-tag" data-tag="cardigan">カーディガン</span>
+              <span class="dressup-tag" data-tag="offshoulder">オフショルダー</span>
+              <span class="dressup-tag" data-tag="camisole">キャミソール</span>
+              <span class="dressup-tag" data-tag="sweater">セーター</span>
+              <span class="dressup-tag" data-tag="tracksuit">ジャージ</span>
+              <span class="dressup-tag" data-tag="dress-shirt">ワイシャツ</span>
+              <span class="dressup-tag" data-tag="tube-top">チューブトップ</span>
+              <span class="dressup-tag" data-tag="tank-top">タンクトップ</span>
+              <span class="dressup-tag" data-tag="leather-jacket">レザージャケット</span>
+              <span class="dressup-tag" data-tag="denim-jacket">デニムジャケット</span>
+              <span class="dressup-tag" data-tag="kimono">着物・浴衣</span>
+              <span class="dressup-tag" data-tag="maid-outfit">メイド服</span>
+              <span class="dressup-tag" data-tag="swimsuit-bikini">水着(ビキニ)</span>
+              <span class="dressup-tag" data-tag="swimsuit-onepiece">水着(ワンピース)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>服装・ボトムス (Bottoms)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="bottoms">
+              <span class="dressup-tag dressup-tag-random" data-tag="random-bottom">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="pants">パンツスタイル</span>
+              <span class="dressup-tag" data-tag="jeans">ジーンズ</span>
+              <span class="dressup-tag" data-tag="skirt">スカート</span>
+              <span class="dressup-tag" data-tag="shortpants">ショートパンツ</span>
+              <span class="dressup-tag" data-tag="tightskirt">タイトスカート</span>
+              <span class="dressup-tag" data-tag="flareskirt">フレアスカート</span>
+              <span class="dressup-tag" data-tag="slacks">スラックス</span>
+              <span class="dressup-tag" data-tag="pleated-skirt">プリーツスカート</span>
+              <span class="dressup-tag" data-tag="long-skirt">ロングスカート</span>
+              <span class="dressup-tag" data-tag="hot-pants">ホットパンツ</span>
+              <span class="dressup-tag" data-tag="sweatpants">スウェットパンツ</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>服装の柄・色合い (Pattern & Tone)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="pattern-tone">
+              <span class="dressup-tag dressup-tag-random" data-tag="pattern-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="pattern-plain">無地</span>
+              <span class="dressup-tag" data-tag="pattern-check">チェック柄</span>
+              <span class="dressup-tag" data-tag="pattern-stripe">ストライプ</span>
+              <span class="dressup-tag" data-tag="pattern-border">ボーダー</span>
+              <span class="dressup-tag" data-tag="pattern-floral">花柄</span>
+              <span class="dressup-tag" data-tag="pattern-dot">水玉・ドット</span>
+              <span class="dressup-tag" data-tag="tone-pastel">淡め・パステル</span>
+              <span class="dressup-tag" data-tag="tone-vivid">ビビッド</span>
+              <span class="dressup-tag" data-tag="tone-monochrome">モノトーン</span>
+              <span class="dressup-tag" data-tag="tone-dark">ダークトーン</span>
+              <span class="dressup-tag" data-tag="tone-light">ライトトーン</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>全体系統・役割 (Style & Role)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="style-role">
+              <span class="dressup-tag dressup-tag-random" data-tag="style-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="style-casual">カジュアル系</span>
+              <span class="dressup-tag" data-tag="style-yurufuwa">ゆるふわ系</span>
+              <span class="dressup-tag" data-tag="style-morigirl">森ガール</span>
+              <span class="dressup-tag" data-tag="style-rock">ロック系</span>
+              <span class="dressup-tag" data-tag="style-punk">パンク系</span>
+              <span class="dressup-tag" data-tag="style-gyaru">ギャル系</span>
+              <span class="dressup-tag" data-tag="style-onee">お姉系</span>
+              <span class="dressup-tag" data-tag="style-mode">モード系</span>
+              <span class="dressup-tag" data-tag="role-beautician">美容師</span>
+              <span class="dressup-tag" data-tag="role-office">OL・オフィス</span>
+              <span class="dressup-tag" data-tag="role-student">学生</span>
+              <span class="dressup-tag" data-tag="role-maid">メイド</span>
+              <span class="dressup-tag" data-tag="role-model">モデル</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>感情・表情 (Emotion & Expression)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="emotion">
+              <span class="dressup-tag dressup-tag-random" data-tag="emotion-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="emotion-smile">笑顔</span>
+              <span class="dressup-tag" data-tag="emotion-happy">喜ぶ</span>
+              <span class="dressup-tag" data-tag="emotion-sad">悲しむ</span>
+              <span class="dressup-tag" data-tag="emotion-angry">怒る</span>
+              <span class="dressup-tag" data-tag="emotion-frustrated">悔しい</span>
+              <span class="dressup-tag" data-tag="emotion-hard">難しい</span>
+              <span class="dressup-tag" data-tag="emotion-easy">簡単</span>
+              <span class="dressup-tag" data-tag="emotion-yay">イエーイ</span>
+              <span class="dressup-tag" data-tag="emotion-surprised">驚く</span>
+              <span class="dressup-tag" data-tag="emotion-wink">ウィンク</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>サロンでの施術 (Salon Service)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="salon-service">
+              <span class="dressup-tag dressup-tag-random" data-tag="service-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="service-cut">カットしている</span>
+              <span class="dressup-tag" data-tag="service-color">カラーしている</span>
+              <span class="dressup-tag" data-tag="service-perm">パーマしている</span>
+              <span class="dressup-tag" data-tag="service-dry">髪を乾かしている</span>
+              <span class="dressup-tag" data-tag="service-blow">ドライヤーしている</span>
+              <span class="dressup-tag" data-tag="service-combing">コーミング・クシとかしている</span>
+              <span class="dressup-tag" data-tag="service-styling">スタイリングしている</span>
+              <span class="dressup-tag" data-tag="service-iron">コテで巻いている</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>エプロン (美容師)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="apron">
+              <span class="dressup-tag dressup-tag-random" data-tag="random-apron">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="no-apron">エプロンなし</span>
+              <span class="dressup-tag" data-tag="black-apron">黒エプロン</span>
+              <span class="dressup-tag" data-tag="beige-apron">ベージュ</span>
+              <span class="dressup-tag" data-tag="denim-apron">デニム</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>アイテム・ポーズ (Props & Actions)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="props">
+              <span class="dressup-tag dressup-tag-random" data-tag="prop-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="normal">標準（立ち姿）</span>
+              <span class="dressup-tag" data-tag="scissor-case">シザーケース</span>
+              <span class="dressup-tag" data-tag="smartphone">スマホ操作</span>
+              <span class="dressup-tag" data-tag="prop-smartphone-front">スマホを前に向ける</span>
+              <span class="dressup-tag" data-tag="color-cup">カラーカップを持つ</span>
+              <span class="dressup-tag" data-tag="prop-color-check">カラーのチェックポイント</span>
+              <span class="dressup-tag" data-tag="chart-writing">カルテ記入で悩む</span>
+              <span class="dressup-tag" data-tag="wasting-money">お金を流して嘆く</span>
+              <span class="dressup-tag" data-tag="holding-200g">200gの文字を持つ</span>
+              <span class="dressup-tag" data-tag="prop-attention">注目させる</span>
+              <span class="dressup-tag" data-tag="sit-cross">ミニスカート（脚組み）</span>
+              <span class="dressup-tag" data-tag="sit-knees">ミニスカート（膝揃え）</span>
+              <span class="dressup-tag" data-tag="sit-relax">ミニスカート（リラックス）</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>アングル・構図 (Angle)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="angle">
+              <span class="dressup-tag dressup-tag-random" data-tag="angle-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="angle-bust">胸上 (Bust up)</span>
+              <span class="dressup-tag" data-tag="angle-waist">腰上 (Waist up)</span>
+              <span class="dressup-tag" data-tag="angle-knee">膝上 (Knee up)</span>
+              <span class="dressup-tag" data-tag="angle-full">全身 (Full body)</span>
+              <span class="dressup-tag" data-tag="angle-back">背中越し (From behind)</span>
+              <span class="dressup-tag" data-tag="angle-side">横顔 (Profile)</span>
+              <span class="dressup-tag" data-tag="angle-high">俯瞰 (High angle)</span>
+              <span class="dressup-tag" data-tag="angle-low">アオリ (Low angle)</span>
+              <span class="dressup-tag" data-tag="angle-face">顔アップ (Close-up)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>シーン・背景 (Scene & Background)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="scene-bg">
+              <span class="dressup-tag dressup-tag-random" data-tag="scene-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="scene-salon">美容室のセット面</span>
+              <span class="dressup-tag" data-tag="scene-shampoo">シャンプー台</span>
+              <span class="dressup-tag" data-tag="scene-cafe">カフェ</span>
+              <span class="dressup-tag" data-tag="scene-street">街角</span>
+              <span class="dressup-tag" data-tag="scene-park">公園</span>
+              <span class="dressup-tag" data-tag="scene-studio">撮影スタジオ</span>
+              <span class="dressup-tag" data-tag="scene-room">自分の部屋</span>
+              <span class="dressup-tag" data-tag="bg-white">白背景</span>
+              <span class="dressup-tag" data-tag="bg-transparent">透過背景（リール用）</span>
+              <span class="dressup-tag" data-tag="bg-simple">シンプルな単色</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dressup-category accordion">
+          <div class="accordion-header">
+            <h4>ライティング・画面比率 (Lighting & Format)</h4>
+            <i data-lucide="chevron-down" class="accordion-icon"></i>
+          </div>
+          <div class="accordion-content">
+            <div class="dressup-tags" data-category="lighting-format">
+              <span class="dressup-tag dressup-tag-random" data-tag="light-random">🎲 ランダム (毎枚変更)</span>
+              <span class="dressup-tag" data-tag="light-natural">自然光</span>
+              <span class="dressup-tag" data-tag="light-studio">スタジオ照明</span>
+              <span class="dressup-tag" data-tag="light-neon">ネオンライト</span>
+              <span class="dressup-tag" data-tag="light-sunset">夕暮れ・エモい</span>
+              <span class="dressup-tag" data-tag="light-cinematic">シネマティック</span>
+              <span class="dressup-tag" data-tag="format-16-9">横長 (16:9)</span>
+              <span class="dressup-tag" data-tag="format-9-16">縦長 (9:16)</span>
+              <span class="dressup-tag" data-tag="format-1-1">正方形 (1:1)</span>
+            </div>
           </div>
         </div>
 
@@ -172,17 +440,15 @@
             </label>
           </div>
 
-          <div class="custom-input-group">
-            <div class="custom-input-row">
-              <label for="prompt-count">生成枚数</label>
-              <select id="prompt-count">
-                <option value="1">1枚</option>
-                <option value="2">2枚</option>
-                <option value="3">3枚</option>
-                <option value="4">4枚</option>
-                <option value="5">5枚</option>
-              </select>
+          <!-- 登場キャラクター選択 -->
+          <div class="multi-char-selector">
+            <label class="multi-char-label"><i data-lucide="users"></i> 登場させるキャラクターを選択 (複数可):</label>
+            <div id="prompt-char-checkboxes" class="char-checkbox-group">
+              <!-- JavaScriptで動的生成 -->
             </div>
+          </div>
+
+          <div class="custom-input-group">
             <div class="custom-input-row">
               <label for="prompt-scene">シーン (場面)</label>
               <input type="text" id="prompt-scene" placeholder="例: 営業終了後の美容室、休日のカフェ など">
@@ -200,7 +466,10 @@
 
         <!-- AIプロンプトメッセージ表示エリア -->
         <div id="ai-prompt-msg" class="ai-prompt-msg">
-          <p>💡 この組み合わせの画像はまだありません。<br>以下の依頼文をコピーして、AIチャットでお願いしてください！</p>
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+            <p style="margin: 0;">💡 以下の依頼文をコピーして、AIチャットでお願いしてください！</p>
+            <button id="btn-copy-prompt" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;"><i data-lucide="copy"></i> コピー</button>
+          </div>
           <div id="ai-prompt-text" class="ai-prompt-text" contenteditable="true"></div>
         </div>
       </section>
@@ -208,10 +477,39 @@
       <!-- 右カラム: キャラクター情報とシートエクスポート -->
       <section class="info-section card">
         <div class="card-header">
-          <h2><i data-lucide="file-text"></i> シート設定 & メタデータ</h2>
+          <h2><i data-lucide="users"></i> キャラクター管理 & 設定</h2>
+        </div>
+
+        <!-- 全体設定(世界観) -->
+        <div class="form-group world-setting-group">
+          <label for="world-style"><i data-lucide="globe"></i> 共通スタイル (全員に適用される世界観・画風)</label>
+          <textarea id="world-style" rows="2" placeholder="例: Soft watercolor style, anime art style, 4k resolution...">Soft watercolor style. 4k high quality.</textarea>
+        </div>
+
+        <!-- キャラクター名簿（タブ） -->
+        <div class="character-roster">
+          <div class="roster-tabs" id="roster-tabs">
+            <!-- JavaScriptで動的生成 -->
+          </div>
+          <button type="button" id="btn-add-character" class="btn btn-outline btn-sm"><i data-lucide="plus"></i> キャラ追加</button>
         </div>
 
         <form id="profile-form" class="profile-form">
+          <!-- リファレンス画像 -->
+          <div class="form-group ref-image-group">
+            <label>リファレンス画像 (キャラ固有の参考画像)</label>
+            <div class="ref-image-upload-area" id="ref-image-upload-area">
+              <input type="file" id="ref-image-input" accept="image/*" style="display: none;">
+              <img id="ref-image-preview" src="" style="display: none;" alt="Reference">
+              <div class="ref-image-placeholder" id="ref-image-placeholder">
+                <i data-lucide="image-plus"></i>
+                <span>クリックして画像を設定</span>
+              </div>
+              <button type="button" id="btn-remove-ref" class="btn-remove-ref" style="display: none;" title="画像を削除"><i data-lucide="x"></i></button>
+            </div>
+            <p class="help-text" style="font-size:0.75rem; color:var(--color-text-muted); margin-top:4px;">※画像生成AIの --cref などに使用するベース画像を保存できます。</p>
+          </div>
+
           <!-- キャラクター名 / シート名 -->
           <div class="form-group name-group">
             <label for="char-name">キャラクター名 / シートタイトル</label>
@@ -269,9 +567,12 @@
       <div class="lightbox-image-container">
         <img id="lightbox-img" src="" alt="Enlarged view">
       </div>
-      <div class="lightbox-actions">
+      <div class="lightbox-actions" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
         <button id="btn-lightbox-download" class="btn btn-primary btn-lg">
-          <i data-lucide="download"></i> 画像をダウンロード
+          <i data-lucide="download"></i> 元画像を保存
+        </button>
+        <button id="btn-lightbox-download-transparent" class="btn btn-secondary btn-lg" style="background: rgba(0, 240, 255, 0.1); color: var(--accent-cyan); border: 1px solid rgba(0, 240, 255, 0.3);">
+          <i data-lucide="droplet"></i> 縁をフワッと透過化して保存 (リール用)
         </button>
       </div>
     </div>

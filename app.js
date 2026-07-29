@@ -6,11 +6,20 @@ const STATE_KEY = 'char_model_sheet_data';
 // デフォルトの状態
 let state = {
   aspectRatio: '9-16', // '3-4' | '9-16' | '1-1'
-  charName: 'Pink Hair Character',
-  charTags: 'Pink Hair, Soft Watercolor, Multi-Pose, Character Sheet',
-  attrHair: 'Light Pink, Wavy Long',
-  attrEyes: 'Gentle Smile',
-  charMemo: 'Soft watercolor style. Wavy light pink long hair. Gentle and happy expressions. Height: ~160cm.',
+  baseStyle: 'Soft watercolor style. 4k high quality.',
+  activeCharId: 1,
+  characters: [
+    {
+      id: 1,
+      charName: 'Pink Hair Character',
+      charTags: 'Pink Hair, Character Sheet',
+      attrHair: 'Light Pink, Wavy Long',
+      attrEyes: 'Gentle Smile',
+      charMemo: 'Height: ~160cm. Bright personality.',
+      activeTags: [],
+      refImage: null
+    }
+  ],
   slots: [
     { src: 'references/test1_smartphone_salon_1_reels.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 },
     { src: 'references/test1_smartphone_salon_2_reels.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 },
@@ -39,6 +48,7 @@ const fileInput = document.getElementById('file-input');
 const saveStatus = document.getElementById('save-status');
 const btnExport = document.getElementById('btn-export');
 const btnReloadImages = document.getElementById('btn-reload-images');
+const btnOpenFolder = document.getElementById('btn-open-folder');
 
 // フォーム要素
 const profileForm = document.getElementById('profile-form');
@@ -48,6 +58,15 @@ const tagsPreview = document.getElementById('tags-preview');
 const attrHairInput = document.getElementById('attr-hair');
 const attrEyesInput = document.getElementById('attr-eyes');
 const charMemoInput = document.getElementById('char-memo');
+const worldStyleInput = document.getElementById('world-style');
+const rosterTabs = document.getElementById('roster-tabs');
+const btnAddCharacter = document.getElementById('btn-add-character');
+const promptCharCheckboxes = document.getElementById('prompt-char-checkboxes');
+const refImageInput = document.getElementById('ref-image-input');
+const refImagePreview = document.getElementById('ref-image-preview');
+const refImagePlaceholder = document.getElementById('ref-image-placeholder');
+const btnRemoveRef = document.getElementById('btn-remove-ref');
+const refImageUploadArea = document.getElementById('ref-image-upload-area');
 
 // ==========================================================================
 // Event Listeners Initialization
@@ -57,18 +76,22 @@ document.addEventListener('DOMContentLoaded', () => {
     window.lucide.createIcons();
   }
 
-  // データの読み込み
+  // データの読み込みと初期描画
   loadSavedData();
+  renderCharacterTabs();
+  renderMultiCharCheckboxes();
+  updateProfileFormFromActiveChar();
 
   // ギャラリーの初期化とレンダリング
   renderGallery();
   setupLightbox();
+  setupCharacterManagement();
 
   // 各種リスナー設定
   if (btnReloadImages) {
     btnReloadImages.addEventListener('click', forceReloadImages);
   }
-  setupSlotSelection();
+  setupSlotSelectionDynamic();
   setupDragAndDrop();
   setupZoom();
   setupAspectSelectors();
@@ -193,6 +216,118 @@ function setupLightbox() {
     link.click();
     document.body.removeChild(link);
   });
+  
+  const dlTransparentBtn = document.getElementById('btn-lightbox-download-transparent');
+  if (dlTransparentBtn) {
+    dlTransparentBtn.addEventListener('click', () => {
+      const img = document.getElementById('lightbox-img');
+      const sourceImage = new Image();
+      sourceImage.crossOrigin = "Anonymous";
+      sourceImage.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = sourceImage.width;
+        canvas.height = sourceImage.height;
+        const ctx = canvas.getContext('2d');
+        
+        // 元画像を描画
+        ctx.drawImage(sourceImage, 0, 0);
+        
+        const maxDim = Math.min(canvas.width, canvas.height);
+        
+        // フェード開始ライン（外側）
+        const outT = maxDim * 0.02; // 上端ギリギリ
+        const outB = maxDim * 0.02;
+        const outL = maxDim * 0.02;
+        const outR = maxDim * 0.02;
+        
+        // フェード終了ライン（内側セーフゾーン）
+        const inT = maxDim * 0.08; // トップは顔を守るため浅く
+        const inB = maxDim * 0.22; // ボトム
+        const inL = maxDim * 0.16; // サイド
+        const inR = maxDim * 0.16;
+        
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = canvas.width;
+        maskCanvas.height = canvas.height;
+        const maskCtx = maskCanvas.getContext('2d');
+        
+        // 全体のぼかし（ご要望に合わせて少し強くしました: 2% -> 4%）
+        maskCtx.filter = `blur(${maxDim * 0.04}px)`;
+        
+        const generatePolygon = (mT, mB, mL, mR, noiseMag) => {
+            const pts = [];
+            const edgeSteps = 15; // 直線の頂点数
+            const addLine = (x1, y1, x2, y2) => {
+                for (let i = 0; i < edgeSteps; i++) {
+                    const frac = i / edgeSteps;
+                    let x = x1 + (x2 - x1) * frac;
+                    let y = y1 + (y2 - y1) * frac;
+                    x += (Math.random() - 0.5) * noiseMag;
+                    y += (Math.random() - 0.5) * noiseMag;
+                    pts.push({x, y});
+                }
+            };
+            const left = mL;
+            const right = canvas.width - mR;
+            const top = mT;
+            const bottom = canvas.height - mB;
+            
+            // 角を丸めない（四角いまま）元の仕様に戻す
+            addLine(left, top, right, top);
+            addLine(right, top, right, bottom);
+            addLine(right, bottom, left, bottom);
+            addLine(left, bottom, left, top);
+            
+            return pts;
+        };
+
+        // 1つ前のバージョン(t*t)に戻し、角を丸めた仕様
+        const steps = 40;
+        maskCtx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+        
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const easeT = t * t; // 外側に大きく広がるカーブ（1個前の仕様）
+            
+            const curT = outT + (inT - outT) * easeT;
+            const curB = outB + (inB - outB) * easeT;
+            const curL = outL + (inL - outL) * easeT;
+            const curR = outR + (inR - outR) * easeT;
+            
+            const noise = maxDim * 0.03;
+            const pts = generatePolygon(curT, curB, curL, curR, noise);
+            
+            maskCtx.beginPath();
+            maskCtx.moveTo(pts[0].x, pts[0].y);
+            for(let j=1; j<pts.length; j++) maskCtx.lineTo(pts[j].x, pts[j].y);
+            maskCtx.closePath();
+            maskCtx.fill();
+        }
+        
+        // 最後に中央の「絶対保護ゾーン」を100%不透明で塗りつぶす
+        maskCtx.fillStyle = 'rgba(0, 0, 0, 1)';
+        const solidPts = generatePolygon(inT, inB, inL, inR, maxDim * 0.01);
+        maskCtx.beginPath();
+        maskCtx.moveTo(solidPts[0].x, solidPts[0].y);
+        for(let j=1; j<solidPts.length; j++) maskCtx.lineTo(solidPts[j].x, solidPts[j].y);
+        maskCtx.closePath();
+        maskCtx.fill();
+        
+        // 元キャンバスにマスクを適用 (destination-in)
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.drawImage(maskCanvas, 0, 0);
+        
+        // PNGとしてダウンロード
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `generated_image_transparent_${new Date().getTime()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+      sourceImage.src = img.src;
+    });
+  }
 }
 
 function openLightbox(src) {
@@ -411,6 +546,41 @@ function setupAspectSelectors() {
 }
 
 // ==========================================================================
+// Image Resizer Utility
+// ==========================================================================
+function resizeImageFile(file, maxWidth, maxHeight, callback) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth || height > maxHeight) {
+        if (width / height > maxWidth / maxHeight) {
+          height = Math.round(height * (maxWidth / width));
+          width = maxWidth;
+        } else {
+          width = Math.round(width * (maxHeight / height));
+          height = maxHeight;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      // Background for transparent images converted to JPEG
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      callback(dataUrl);
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==========================================================================
 // File Input & Image Loader
 // ==========================================================================
 function setupFileInput() {
@@ -418,9 +588,7 @@ function setupFileInput() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const src = event.target.result;
+    resizeImageFile(file, 1600, 1600, (src) => {
       state.slots[activeSlotIndex].src = src;
       
       const img = document.querySelector(`.slot-card[data-slot="${activeSlotIndex}"] .slot-img`);
@@ -438,8 +606,7 @@ function setupFileInput() {
       
       img.src = src;
       markAsUnsaved();
-    };
-    reader.readAsDataURL(file);
+    });
   });
 }
 
@@ -452,7 +619,7 @@ function setupFormListeners() {
     markAsUnsaved();
   });
 
-  const inputs = [charNameInput, attrHairInput, attrEyesInput, charMemoInput];
+  const inputs = [charNameInput, attrHairInput, attrEyesInput, charMemoInput, worldStyleInput];
   inputs.forEach(input => {
     input.addEventListener('input', markAsUnsaved);
   });
@@ -465,9 +632,9 @@ function setupFormListeners() {
 
 function updateTagsPreview(tagsString) {
   tagsPreview.innerHTML = '';
-  if (!tagsString.trim()) return;
+  if (!tagsString || !tagsString.trim()) return;
 
-  const tags = tagsString.split(',')
+  const tags = tagsString.split(/[,、]/)
     .map(t => t.trim())
     .filter(t => t.length > 0);
 
@@ -500,14 +667,37 @@ function markAsSaved() {
 }
 
 function saveData() {
-  state.charName = charNameInput.value;
-  state.charTags = charTagsInput.value;
-  state.attrHair = attrHairInput.value;
-  state.attrEyes = attrEyesInput.value;
-  state.charMemo = charMemoInput.value;
+  state.baseStyle = worldStyleInput.value;
+  
+  const activeChar = state.characters.find(c => c.id === state.activeCharId);
+  if (activeChar) {
+    activeChar.charName = charNameInput.value;
+    activeChar.charTags = charTagsInput.value;
+    activeChar.attrHair = attrHairInput.value;
+    activeChar.attrEyes = attrEyesInput.value;
+    activeChar.charMemo = charMemoInput.value;
+  }
 
-  localStorage.setItem(STATE_KEY, JSON.stringify(state));
-  markAsSaved();
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    markAsSaved();
+    showToast('設定データを保存しました');
+    
+    // バックエンドへフルデータを送信 (AI読み取り用)
+    fetch('/api/save-full-state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    }).catch(err => console.error('Full state backup failed:', err));
+    
+  } catch (e) {
+    console.error('Save failed (likely QuotaExceededError):', e);
+    showToast('保存エラー: ブラウザの保存容量がいっぱいです。画像の枚数やサイズを減らしてください。');
+  }
+
+  // 名簿タブとチェックボックスを再描画して名前を反映
+  renderCharacterTabs();
+  renderMultiCharCheckboxes();
 
   const card = document.querySelector('.info-section');
   card.style.borderColor = 'var(--accent-green)';
@@ -519,53 +709,50 @@ function saveData() {
 function loadSavedData() {
   const saved = localStorage.getItem(STATE_KEY);
   if (!saved) {
-    updateTagsPreview(state.charTags);
+    // 初回起動時
     return;
   }
 
   try {
     const data = JSON.parse(saved);
     
-    // 互換性担保（スロット数が同じか）
-    if (data.slots && data.slots.length === state.slots.length) {
-      state = { ...state, ...data };
+    // データ移行ロジック（古い形式から新しいcharacters配列形式へ）
+    if (!data.characters && data.charName) {
+      console.log('Migrating old state to new character array format');
+      state.characters = [
+        {
+          id: 1,
+          charName: data.charName,
+          charTags: data.charTags,
+          attrHair: data.attrHair,
+          attrEyes: data.attrEyes,
+          charMemo: data.charMemo,
+        }
+      ];
+      state.baseStyle = 'Soft watercolor style, 4k high quality.';
+      state.activeCharId = 1;
+      
+      if (data.slots && data.slots.length > 0) {
+        state.slots = data.slots;
+      }
     } else {
-      // スロット情報以外をマージ
-      const { slots, ...otherData } = data;
-      state = { ...state, ...otherData };
+      // 正常な新しいフォーマットのロード
+      state = { ...state, ...data };
     }
 
-    // 不正な数値 (NaNなど) のバリデーションと補正
+    // データマイグレーション（activeTags, refImageの追加）
+    state.characters.forEach(char => {
+      if (!char.activeTags) char.activeTags = [];
+      if (char.refImage === undefined) char.refImage = null;
+    });
+
+    // 不正な数値のバリデーション
     state.slots.forEach(slot => {
       if (typeof slot.x !== 'number' || isNaN(slot.x)) slot.x = 0;
       if (typeof slot.y !== 'number' || isNaN(slot.y)) slot.y = 0;
       if (typeof slot.scale !== 'number' || isNaN(slot.scale) || slot.scale <= 0) slot.scale = 1.0;
       if (typeof slot.baseScale !== 'number' || isNaN(slot.baseScale) || slot.baseScale <= 0) slot.baseScale = 1.0;
-      
-      // 古いカジュアル画像を美容師風画像に自動マイグレーション
-      if (slot.src === 'references/test1_pose4.png') {
-        slot.src = 'references/test1_hairdresser.png';
-        slot.x = 0;
-        slot.y = 0;
-        slot.scale = 1.0;
-      }
-
-      // 古い本持ち画像をカルテ悩み画像に自動マイグレーション
-      if (slot.src === 'references/test1_pose3.png') {
-        slot.src = 'references/test1_chart_trouble.jpg';
-        slot.x = 0;
-        slot.y = 0;
-        slot.scale = 1.0;
-      }
     });
-
-    charNameInput.value = state.charName;
-    charTagsInput.value = state.charTags;
-    attrHairInput.value = state.attrHair;
-    attrEyesInput.value = state.attrEyes;
-    charMemoInput.value = state.charMemo;
-
-    updateTagsPreview(state.charTags);
 
     // アスペクト比ボタンのアクティブ切り替え
     const aspectButtons = document.querySelectorAll('.btn-aspect');
@@ -577,16 +764,194 @@ function loadSavedData() {
       }
     });
 
-    const viewports = document.querySelectorAll('.poses-grid-container .viewport');
-    viewports.forEach(vp => {
-      vp.className = `viewport aspect-${state.aspectRatio}`;
-    });
-
     markAsSaved();
   } catch (e) {
     console.error('Failed to load state:', e);
     markAsUnsaved();
   }
+}
+
+// キャラクターフォームにデータを反映する関数
+function updateProfileFormFromActiveChar() {
+  worldStyleInput.value = state.baseStyle || '';
+  
+  const activeChar = state.characters.find(c => c.id === state.activeCharId) || state.characters[0];
+  if (!activeChar) return;
+  
+  charNameInput.value = activeChar.charName || '';
+  charTagsInput.value = activeChar.charTags || '';
+  attrHairInput.value = activeChar.attrHair || '';
+  attrEyesInput.value = activeChar.attrEyes || '';
+  charMemoInput.value = activeChar.charMemo || '';
+
+  if (activeChar.refImage) {
+    refImagePreview.src = activeChar.refImage;
+    refImagePreview.style.display = 'block';
+    refImagePlaceholder.style.display = 'none';
+    btnRemoveRef.style.display = 'flex';
+  } else {
+    refImagePreview.src = '';
+    refImagePreview.style.display = 'none';
+    refImagePlaceholder.style.display = 'flex';
+    btnRemoveRef.style.display = 'none';
+  }
+
+  updateTagsPreview(activeChar.charTags || '');
+  updateDressUpStudioUI();
+}
+
+// キャラクター名簿の描画
+function renderCharacterTabs() {
+  rosterTabs.innerHTML = '';
+  state.characters.forEach((char) => {
+    const tab = document.createElement('div');
+    tab.className = `roster-tab ${char.id === state.activeCharId ? 'active' : ''}`;
+    tab.dataset.id = char.id;
+    tab.innerHTML = `<i data-lucide="user"></i> ${char.charName || 'New Char'}`;
+    rosterTabs.appendChild(tab);
+  });
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// 登場キャラ選択のチェックボックスの描画
+function renderMultiCharCheckboxes() {
+  promptCharCheckboxes.innerHTML = '';
+  state.characters.forEach((char) => {
+    const label = document.createElement('label');
+    label.className = 'char-checkbox-label';
+    
+    // デフォルトでアクティブなキャラだけチェック状態にする
+    const isChecked = char.id === state.activeCharId ? 'checked' : '';
+    
+    label.innerHTML = `
+      <input type="checkbox" value="${char.id}" class="prompt-char-select" ${isChecked}>
+      ${char.charName || 'New Char'}
+    `;
+    promptCharCheckboxes.appendChild(label);
+  });
+  
+  // チェック状態が変わったらプロンプトを再構築
+  const checkboxes = promptCharCheckboxes.querySelectorAll('.prompt-char-select');
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      // 簡易的に triggerEvaluate を呼ぶために、
+      // 実際には evaluateDressUpCombination に必要なDOM要素を直接渡して実行する
+      const aiMsgBox = document.getElementById('ai-prompt-msg');
+      const aiPromptText = document.getElementById('ai-prompt-text');
+      const promptCount = document.getElementById('prompt-count');
+      const promptScene = document.getElementById('prompt-scene');
+      const promptAction = document.getElementById('prompt-action');
+      const promptBg = document.getElementById('prompt-bg');
+      const designRadios = document.getElementsByName('design-spec');
+      
+      if (typeof evaluateDressUpCombination === 'function') {
+        evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptAction, promptBg, designRadios, promptCount);
+      }
+    });
+  });
+}
+
+function setupCharacterManagement() {
+  // タブのクリックでキャラクター切り替え
+  rosterTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('.roster-tab');
+    if (!tab) return;
+    
+    const charId = parseInt(tab.dataset.id);
+    if (charId === state.activeCharId) return;
+    
+    // 現在の入力を保存してから切り替え
+    saveData();
+    state.activeCharId = charId;
+    updateProfileFormFromActiveChar();
+    renderCharacterTabs();
+    
+    // 新しいキャラを開いた際、デフォルトでチェックボックスもそれに合わせる（任意）
+    renderMultiCharCheckboxes();
+  });
+
+  // 追加ボタン
+  btnAddCharacter.addEventListener('click', () => {
+    saveData(); // 現在の状態を保存
+    
+    const newId = state.characters.length > 0 ? Math.max(...state.characters.map(c => c.id)) + 1 : 1;
+    const newChar = {
+      id: newId,
+      charName: `Character ${newId}`,
+      charTags: 'New Character',
+      attrHair: '',
+      attrEyes: '',
+      charMemo: '',
+      activeTags: [],
+      refImage: null
+    };
+    state.characters.push(newChar);
+    state.activeCharId = newId;
+
+    // バックエンドにフォルダ作成をリクエスト
+    fetch('/api/create-char-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderName: `char_${newId}` })
+    }).catch(err => console.error('Folder creation failed:', err));
+    
+    
+    updateProfileFormFromActiveChar();
+    renderCharacterTabs();
+    renderMultiCharCheckboxes();
+    saveData();
+  });
+
+  // リファレンス画像のアップロード機能
+  refImageUploadArea.addEventListener('click', (e) => {
+    if (e.target.closest('.btn-remove-ref')) return;
+    refImageInput.click();
+  });
+
+  refImageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const activeChar = state.characters.find(c => c.id === state.activeCharId);
+    if (!activeChar) return;
+    
+    resizeImageFile(file, 800, 800, (resizedDataUrl) => {
+      const safeName = (activeChar.charName || `char_${activeChar.id}`).replace(/[\\/:*?"<>|]/g, '');
+      const folderName = safeName;
+      const fileName = `ref_${new Date().getTime()}.png`;
+
+      fetch('/api/upload-ref', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderName, fileName, base64Data: resizedDataUrl })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          activeChar.refImage = data.filePath; // e.g., references/いと/ref_123.png
+          updateProfileFormFromActiveChar();
+          saveData();
+        } else {
+          showToast('画像保存エラー: ' + data.error);
+        }
+      })
+      .catch(err => {
+        console.error('Upload failed:', err);
+        showToast('画像保存通信エラーが発生しました');
+      });
+    });
+  });
+
+  btnRemoveRef.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const activeChar = state.characters.find(c => c.id === state.activeCharId);
+    if (activeChar) {
+      activeChar.refImage = null;
+      refImageInput.value = '';
+      updateProfileFormFromActiveChar();
+      saveData();
+    }
+  });
 }
 
 // ==========================================================================
@@ -634,21 +999,23 @@ function exportModelSheet() {
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
   
   // --- 2. ヘッダーテキストの描画 ---
+  const activeChar = state.characters.find(c => c.id === state.activeCharId) || state.characters[0];
+
   // タイトル (キャラクター名)
   ctx.fillStyle = '#0f111a';
   ctx.font = `bold 64px 'Outfit', 'Noto Sans JP', sans-serif`;
-  ctx.fillText(state.charName || 'Character Model Sheet', padding, 100);
+  ctx.fillText(activeChar.charName || 'Character Model Sheet', padding, 100);
   
   // サブタイトル / 属性情報
   ctx.fillStyle = '#656a8a';
   ctx.font = `28px 'Outfit', 'Noto Sans JP', sans-serif`;
-  const infoText = `Hair: ${state.attrHair || 'N/A'}  |  Eyes: ${state.attrEyes || 'N/A'}`;
+  const infoText = `Hair: ${activeChar.attrHair || 'N/A'}  |  Eyes: ${activeChar.attrEyes || 'N/A'}`;
   ctx.fillText(infoText, padding, 150);
   
   // メモテキストの描画
   ctx.fillStyle = '#4a4f6d';
   ctx.font = `italic 24px 'Outfit', 'Noto Sans JP', sans-serif`;
-  const memoText = state.charMemo || '';
+  const memoText = activeChar.charMemo || '';
   ctx.fillText(memoText, padding, 195);
   
   // 装飾用のライン
@@ -775,7 +1142,8 @@ function exportModelSheet() {
     
     // タグバッジの並び描画
     ctx.font = `24px 'Outfit', 'Noto Sans JP', sans-serif`;
-    const tags = (state.charTags || '').split(',')
+    const activeChar = state.characters.find(c => c.id === state.activeCharId) || state.characters[0];
+    const tags = (activeChar.charTags || '').split(/[,、]/)
       .map(t => t.trim())
       .filter(t => t.length > 0);
       
@@ -799,7 +1167,8 @@ function exportModelSheet() {
     // --- 5. ダウンロード処理 ---
     const dataURL = canvas.toDataURL('image/png');
     const link = document.createElement('a');
-    link.download = `${state.charName.replace(/\s+/g, '_')}_model_sheet.png`;
+    const safeName = (activeChar.charName || 'character').replace(/\s+/g, '_');
+    link.download = `${safeName}_model_sheet.png`;
     link.href = dataURL;
     link.click();
   }
@@ -815,7 +1184,7 @@ const dressUpDatabase = {
   'blouse': 'references/test1.png',
   'knit': 'references/test1_outfit_summer_beautician_knit.jpg',
   'sheer': 'references/test1_outfit_summer_beautician_sheer.jpg',
-  'mode': 'references/test1_outfit_mode_short.jpg',
+'mode': 'references/test1_outfit_mode_short.jpg',
   'casual': 'references/test1_outfit_summer_casual.jpg',
 
   // エプロン系
@@ -836,6 +1205,24 @@ const dressUpDatabase = {
   'sit-relax': 'references/test1_miniskirt_sit_relax.jpg',
 };
 
+function updateDressUpStudioUI() {
+  const activeChar = state.characters.find(c => c.id === state.activeCharId);
+  const tags = document.querySelectorAll('.dressup-tag');
+  
+  if (!activeChar || !activeChar.activeTags) {
+    tags.forEach(tag => tag.classList.remove('active'));
+    return;
+  }
+  
+  tags.forEach(tag => {
+    if (activeChar.activeTags.includes(tag.getAttribute('data-tag'))) {
+      tag.classList.add('active');
+    } else {
+      tag.classList.remove('active');
+    }
+  });
+}
+
 function setupDressUpStudio() {
   const tags = document.querySelectorAll('.dressup-tag');
   const aiMsgBox = document.getElementById('ai-prompt-msg');
@@ -848,39 +1235,124 @@ function setupDressUpStudio() {
   const promptBg = document.getElementById('prompt-bg');
   const designRadios = document.getElementsByName('design-spec');
 
-  let activeTags = [];
-
   const triggerEvaluate = () => {
-    evaluateDressUpCombination(activeTags, aiMsgBox, aiPromptText, promptScene, promptAction, promptBg, designRadios, promptCount);
+    evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptAction, promptBg, designRadios, promptCount);
   };
 
-  tags.forEach(tag => {
+  // アコーディオンの開閉処理
+  document.querySelectorAll('.accordion-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.parentElement.classList.toggle('open');
+    });
+  });
+
+  // 全クリアボタン
+  const clearAllBtn = document.getElementById('clear-all-tags-btn');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', () => {
+      const activeChar = state.characters.find(c => c.id === state.activeCharId);
+      if (activeChar) {
+        activeChar.activeTags = [];
+      }
+      document.querySelectorAll('.dressup-tag:not(#prompt-count-tags .dressup-tag)').forEach(tag => tag.classList.remove('active'));
+      saveData();
+      triggerEvaluate();
+    });
+  }
+
+  // 生成枚数タグ
+  const countTags = document.querySelectorAll('#prompt-count-tags .dressup-tag');
+  countTags.forEach(tag => {
     tag.addEventListener('click', () => {
-      // Toggle active class
-      tag.classList.toggle('active');
-      
-      const tagId = tag.getAttribute('data-tag');
-      if (tag.classList.contains('active')) {
-        activeTags.push(tagId);
-      } else {
-        activeTags = activeTags.filter(t => t !== tagId);
+      countTags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      triggerEvaluate();
+    });
+  });
+
+  tags.forEach(tag => {
+    // 生成枚数タグは別処理
+    if (tag.closest('#prompt-count-tags')) return;
+
+    tag.addEventListener('click', () => {
+      const activeChar = state.characters.find(c => c.id === state.activeCharId);
+      if (!activeChar) return;
+      if (!activeChar.activeTags) activeChar.activeTags = [];
+
+      // ランダムボタンの場合
+      if (tag.classList.contains('btn-random')) {
+        const container = tag.closest('.dressup-tags');
+        const siblingTags = Array.from(container.querySelectorAll('.dressup-tag:not(.btn-random)'));
+        if (siblingTags.length > 0) {
+          // すべての兄弟タグをオフ
+          siblingTags.forEach(t => {
+            t.classList.remove('active');
+            const tId = t.getAttribute('data-tag');
+            activeChar.activeTags = activeChar.activeTags.filter(at => at !== tId);
+          });
+          
+          // ランダムに1つ選択
+          const randomTag = siblingTags[Math.floor(Math.random() * siblingTags.length)];
+          randomTag.classList.add('active');
+          const randomTagId = randomTag.getAttribute('data-tag');
+          if (!activeChar.activeTags.includes(randomTagId)) {
+            activeChar.activeTags.push(randomTagId);
+          }
+          
+          saveData();
+          triggerEvaluate();
+        }
+        return;
       }
 
+      tag.classList.toggle('active');
+      const tagId = tag.getAttribute('data-tag');
+      
+      if (tag.classList.contains('active')) {
+        activeChar.activeTags.push(tagId);
+      } else {
+        activeChar.activeTags = activeChar.activeTags.filter(t => t !== tagId);
+      }
+
+      saveData();
       triggerEvaluate();
     });
   });
 
   // 自由入力欄の変更時もプロンプトを再構築する
-  if (promptCount) promptCount.addEventListener('change', triggerEvaluate);
   if (promptScene) promptScene.addEventListener('input', triggerEvaluate);
   if (promptAction) promptAction.addEventListener('input', triggerEvaluate);
   if (promptBg) promptBg.addEventListener('input', triggerEvaluate);
   if (designRadios) {
     designRadios.forEach(radio => radio.addEventListener('change', triggerEvaluate));
   }
+  
+  // 初期ロード時のUI更新
+  updateDressUpStudioUI();
 }
 
-function evaluateDressUpCombination(activeTags, aiMsgBox, aiPromptText, promptScene, promptAction, promptBg, designRadios, promptCount) {
+function showToast(message) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<i data-lucide="check-circle" style="vertical-align: middle; margin-right: 6px; width: 18px; height: 18px;"></i> ${message}`;
+  if (window.lucide) window.lucide.createIcons();
+  
+  toast.classList.add('show');
+  
+  // Clear any existing timeout
+  if (toast.timeoutId) clearTimeout(toast.timeoutId);
+  
+  toast.timeoutId = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptAction, promptBg, designRadios, promptCount) {
   const customScene = promptScene ? promptScene.value.trim() : '';
   const customAction = promptAction ? promptAction.value.trim() : '';
   const customBg = promptBg ? promptBg.value.trim() : '';
@@ -895,108 +1367,152 @@ function evaluateDressUpCombination(activeTags, aiMsgBox, aiPromptText, promptSc
     }
   }
 
-  const hasCustomInput = customScene !== '' || customAction !== '' || customBg !== '';
-
-  if (activeTags.length === 0 && !hasCustomInput) {
-    aiMsgBox.classList.remove('active');
+  aiMsgBox.classList.add('active');
+  
+  // === マルチキャラクタープロンプトの構築 ===
+  const selectedCheckboxes = document.querySelectorAll('.prompt-char-select:checked');
+  const selectedCharIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+  const selectedChars = selectedCharIds.map(id => state.characters.find(c => c.id === id)).filter(Boolean);
+  
+  if (selectedChars.length === 0) {
+    aiPromptText.innerHTML = "※登場させるキャラクターを少なくとも1人選択してください。";
     return;
   }
 
-  // 1. 基本となるキーを生成 (最後にクリックされたものを主軸にする等の簡単な実装)
-  let imagePath = null;
-  const lastTag = activeTags[activeTags.length - 1];
+  // 1. 世界観
+  const styleStr = state.baseStyle ? `\n【共通の画風・世界観】：\n${state.baseStyle}\n` : '';
+
+  // 2. 服装・アイテムの処理 (アクティブなタグ)
+  const allUsedTags = [];
   
-  // 2. 特殊な組み合わせの完全一致を優先チェック
-  if (activeTags.includes('chart-writing')) {
-    if (activeTags.includes('tshirt')) imagePath = 'references/test1_chart_trouble_tshirt.jpg';
-    else if (activeTags.includes('knit')) imagePath = 'references/test1_chart_trouble_knit.jpg';
-    else if (activeTags.includes('sheer')) imagePath = 'references/test1_chart_trouble_sheer.jpg';
-    else if (activeTags.includes('denim-apron')) imagePath = 'references/test1_chart_trouble_denim_apron.jpg';
-    else imagePath = 'references/test1_chart_trouble.jpg';
-  }
-  else if (activeTags.includes('color-cup')) {
-    if (activeTags.includes('beige-apron')) imagePath = 'references/test1_wasting_money_cup_beige.jpg';
-    else if (activeTags.includes('denim-apron')) imagePath = 'references/test1_wasting_money_cup_denim.jpg';
-    else if (activeTags.includes('mode')) imagePath = 'references/test1_wasting_money_cup_black.jpg';
-    else imagePath = null; // カラーカップ単体の画像はないためプロンプト表示
-  }
-  else {
-    // 組み合わせが見つからなければ、単体タグで検索
-    imagePath = dressUpDatabase[lastTag];
-  }
+  // Helper to process tags for a character
+  const processCharTags = (char) => {
+    const tags = char.activeTags || [];
+    const tops = tags.filter(t => ['tshirt', 'blouse', 'knit', 'sheer', 'mode', 'casual', 'hoodie', 'cardigan', 'offshoulder', 'camisole', 'sweater', 'tracksuit', 'dress-shirt', 'tube-top', 'tank-top', 'leather-jacket', 'denim-jacket', 'kimono', 'maid-outfit', 'swimsuit-bikini', 'swimsuit-onepiece', 'random-top'].includes(t));
+    const bottoms = tags.filter(t => ['casual', 'pants', 'jeans', 'skirt', 'shortpants', 'tightskirt', 'flareskirt', 'slacks', 'pleated-skirt', 'long-skirt', 'hot-pants', 'sweatpants', 'random-bottom'].includes(t));
+    const aprons = tags.filter(t => t.includes('apron'));
+    const angles = tags.filter(t => t.startsWith('angle-'));
+    const hairs = tags.filter(t => t.startsWith('hair-'));
+    const colors = tags.filter(t => t.startsWith('color-'));
+    const bangs = tags.filter(t => t.startsWith('bangs-'));
+    const stylesRoles = tags.filter(t => t.startsWith('style-') || t.startsWith('role-'));
+    const patterns = tags.filter(t => t.startsWith('pattern-') || t.startsWith('tone-'));
+    const emotions = tags.filter(t => t.startsWith('emotion-'));
+    const scenesBgs = tags.filter(t => t.startsWith('scene-') || t.startsWith('bg-'));
+    const lights = tags.filter(t => t.startsWith('light-'));
+    const formats = tags.filter(t => t.startsWith('format-'));
+    const props = tags.filter(t => !t.startsWith('hair-') && !t.startsWith('color-') && !t.startsWith('bangs-') && !t.startsWith('style-') && !t.startsWith('role-') && !t.startsWith('pattern-') && !t.startsWith('tone-') && !t.startsWith('emotion-') && !t.startsWith('angle-') && !t.startsWith('scene-') && !t.startsWith('bg-') && !t.startsWith('light-') && !t.startsWith('format-') && !tops.includes(t) && !bottoms.includes(t) && !aprons.includes(t));
 
-  // 3. 組み合わせが未知で画像がない場合の判定 (またはカスタム入力がある場合)
-  // カスタム入力（シーン、動作など）が1つでも入力されていれば、強制的に「未生成」扱いにしてプロンプトを生成させる
-  if (hasCustomInput) {
-    imagePath = null;
-  } else if (activeTags.length > 1 && !imagePath && !activeTags.includes('chart-writing') && !activeTags.includes('color-cup')) {
-     imagePath = null; 
-  }
+    const outfitStr = [];
+    if (tops.length) outfitStr.push(`トップス: ${document.querySelector(`[data-tag="${tops[0]}"]`)?.textContent}`);
+    if (bottoms.length) outfitStr.push(`ボトムス: ${document.querySelector(`[data-tag="${bottoms[0]}"]`)?.textContent}`);
+    if (aprons.length) outfitStr.push(`エプロン: ${document.querySelector(`[data-tag="${aprons[0]}"]`)?.textContent}`);
 
-  // 4. 結果の反映
-  if (imagePath) {
-    // 画像が存在する場合、現在のスロットの画像を更新
-    aiMsgBox.classList.remove('active');
+    const itemStr = props.map(p => document.querySelector(`[data-tag="${p}"]`)?.textContent).join(', ');
+    const angleTags = angles.map(a => document.querySelector(`[data-tag="${a}"]`)?.textContent);
+    const hairStr = hairs.map(h => document.querySelector(`[data-tag="${h}"]`)?.textContent).join(', ');
+    const colorStr = colors.map(c => document.querySelector(`[data-tag="${c}"]`)?.textContent).join(', ');
+    const bangStr = bangs.map(b => document.querySelector(`[data-tag="${b}"]`)?.textContent).join(', ');
+    const styleRoleStr = stylesRoles.map(s => document.querySelector(`[data-tag="${s}"]`)?.textContent).join(', ');
+    const patternStr = patterns.map(p => document.querySelector(`[data-tag="${p}"]`)?.textContent).join(', ');
+    const emotionStr = emotions.map(e => document.querySelector(`[data-tag="${e}"]`)?.textContent).join(', ');
     
-    const slotCard = document.querySelector(`.slot-card[data-slot="${activeSlotIndex}"]`);
-    const img = slotCard.querySelector('.slot-img');
+    const sceneBgTags = scenesBgs.map(s => document.querySelector(`[data-tag="${s}"]`)?.textContent);
+    const lightTags = lights.map(l => document.querySelector(`[data-tag="${l}"]`)?.textContent);
+    const formatTags = formats.map(f => document.querySelector(`[data-tag="${f}"]`)?.textContent);
     
-    // UI側の更新
-    img.style.opacity = '0.3';
-    img.src = imagePath;
+    tags.forEach(t => allUsedTags.push(t));
     
-    // キャッシュ対策とロード完了後の表示
-    img.onload = () => {
-      img.style.opacity = '1';
-      calculateBaseScale(activeSlotIndex, img);
-      updateSlotImageTransform(activeSlotIndex);
-    };
+    return { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags };
+  };
+
+  let globalAngleTags = new Set();
+  let globalSceneBgTags = new Set();
+  let globalLightTags = new Set();
+  let globalFormatTags = new Set();
+
+  // 3. キャラクター情報（人数分）
+  let charactersStr = '';
+  if (selectedChars.length === 1) {
+    const char = selectedChars[0];
+    const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags } = processCharTags(char);
+    angleTags.forEach(a => globalAngleTags.add(a));
+    sceneBgTags.forEach(s => globalSceneBgTags.add(s));
+    lightTags.forEach(l => globalLightTags.add(l));
+    formatTags.forEach(f => globalFormatTags.add(f));
     
-    // ステートの更新
-    state.slots[activeSlotIndex].src = imagePath;
-    saveData();
+    let finalHair = char.attrHair || '指定なし';
+    if (colorStr) finalHair += ` (色変更: ${colorStr})`;
+    if (hairStr) finalHair += ` (髪型変更: ${hairStr})`;
+    if (bangStr) finalHair += ` (前髪: ${bangStr})`;
+    
+    charactersStr = `\n【キャラクターの特徴】：
+- 髪: ${finalHair}
+- 目: ${char.attrEyes || '指定なし'}
+- メモ: ${char.charMemo || '特になし'}
+${emotionStr ? `- 感情/表情: ${emotionStr}\n` : ''}${styleRoleStr ? `- 系統/役割: ${styleRoleStr}\n` : ''}${char.refImage ? `- 参考画像 (cref): \`${char.refImage}\` を使用\n` : ''}`;
+
+    if (outfitStr.length > 0) charactersStr += `- 服装: ${outfitStr.join(' / ')}\n`;
+    if (patternStr) charactersStr += `- 服装の柄/色合い: ${patternStr}\n`;
+    if (itemStr.length > 0) charactersStr += `- アクション/アイテム: ${itemStr}\n`;
     
   } else {
-    // 画像が存在しない（またはカスタム入力がある）場合、AIプロンプトを構築して表示
-    aiMsgBox.classList.add('active');
-    
-    const hairTags = [];
-    const outfitTags = [];
-    activeTags.forEach(t => {
-      const el = document.querySelector(`.dressup-tag[data-tag="${t}"]`);
-      if (el) {
-        if (t.startsWith('hair-') || t.startsWith('color-')) {
-          hairTags.push(el.innerText);
-        } else {
-          outfitTags.push(el.innerText);
-        }
-      }
+    // 複数人の場合
+    charactersStr = `\n【登場人物 (${selectedChars.length}人)】：`;
+    selectedChars.forEach((char, index) => {
+      const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags } = processCharTags(char);
+      angleTags.forEach(a => globalAngleTags.add(a));
+      sceneBgTags.forEach(s => globalSceneBgTags.add(s));
+      lightTags.forEach(l => globalLightTags.add(l));
+      formatTags.forEach(f => globalFormatTags.add(f));
+      
+      let finalHair = char.attrHair || '指定なし';
+      if (colorStr) finalHair += ` (色変更: ${colorStr})`;
+      if (hairStr) finalHair += ` (髪型変更: ${hairStr})`;
+      if (bangStr) finalHair += ` (前髪: ${bangStr})`;
+      
+      charactersStr += `\n▼ 人物${index + 1} (${char.charName || '名無し'}):
+- 髪: ${finalHair}
+- 目: ${char.attrEyes || '指定なし'}
+- メモ: ${char.charMemo || '特になし'}`;
+      if (emotionStr) charactersStr += `\n- 感情/表情: ${emotionStr}`;
+      if (styleRoleStr) charactersStr += `\n- 系統/役割: ${styleRoleStr}`;
+      if (char.refImage) charactersStr += `\n- 参考画像 (cref): \`${char.refImage}\` を使用`;
+      if (outfitStr.length > 0) charactersStr += `\n- 服装: ${outfitStr.join(' / ')}`;
+      if (patternStr) charactersStr += `\n- 服装の柄/色合い: ${patternStr}`;
+      if (itemStr.length > 0) charactersStr += `\n- アクション/アイテム: ${itemStr}`;
     });
-    
-    const outfitText = outfitTags.length > 0 ? outfitTags.join('、') : '特になし';
-    const hairText = hairTags.length > 0 ? hairTags.join('、') : '基本のまま';
-    
-    const designText = designSpec === 'random' ? '（※形状や柄はおまかせで別のデザインにして！）' : '（※今までと同じデザインで完全再現）';
-    const countText = promptCount ? promptCount.value : '1';
-    
-    let promptLines = [
-      `このキャラクターで以下の内容のイラストを ${countText}枚 生成してください。`,
-      `【髪型・髪色】：${hairText}`,
-      `【服装・アイテム】：${outfitText} ${designText}`
-    ];
-
-    if (customScene) promptLines.push(`【シーン】：${customScene}`);
-    if (customAction) promptLines.push(`【動作】：${customAction}`);
-    if (customBg) promptLines.push(`【背景】：${customBg}`);
-    
-    aiPromptText.innerText = promptLines.join('\n');
+    charactersStr += '\n';
   }
 
-  // 5. AI連携用: 現在の選択状態をバックエンドに送信
+  // 4. シーン・動作・アングル
+  const sceneText = customScene ? `\n【シーン】：${customScene}` : '';
+  const actionText = customAction ? `\n【動作】：${customAction}` : '';
+  const angleText = globalAngleTags.size > 0 ? `\n【アングル/構図】：${Array.from(globalAngleTags).join(', ')}` : '';
+  
+  // セーフゾーン（リール等での後加工用）の指示を常に追加
+  const safeZoneInstruction = '（※重要：後で枠を大きく切り抜くため、キャラクターは画面いっぱいに描かず、周囲に十分な余白（セーフゾーン）を確保して少し引きの構図で描いてください。頭や足先が画面の端に近すぎないようにすること）';
+  const bgText = customBg ? `\n【背景】：${customBg} ${safeZoneInstruction}` : `\n【背景】：${safeZoneInstruction}`;
+
+  // 5. デザイン指定
+  let designInstruction = designSpec === 'fixed' 
+    ? '（※今までと同じデザインの一貫性を保って生成してください）' 
+    : '（※服装の形状や柄はおまかせで別のデザインにアレンジしてください）';
+
+  const countTag = document.querySelector('#prompt-count-tags .active');
+  const countText = countTag ? countTag.getAttribute('data-count') : '1';
+  
+  // プロンプトを結合
+  const promptInstruction = `以下の内容でイラストを ${countText}枚 生成してください。`;
+  const combinedPrompt = `${promptInstruction}${styleStr}${charactersStr}${sceneText}${actionText}${angleText}${bgText}\n${designInstruction}`;
+  
+  aiPromptText.innerText = combinedPrompt;
+  
+  // 6. AI連携用: 現在の選択状態をバックエンドに送信
   const currentState = {
-    activeTags: activeTags,
-    requestedPrompt: aiMsgBox.classList.contains('active') ? aiPromptText.innerText : null,
-    generateCount: promptCount ? promptCount.value : '1'
+    activeTags: allUsedTags,
+    requestedPrompt: aiPromptText.innerText,
+    generateCount: countText
   };
 
   fetch('/api/save-state', {
@@ -1008,3 +1524,81 @@ function evaluateDressUpCombination(activeTags, aiMsgBox, aiPromptText, promptSc
   }).catch(err => console.error('AI Integration Error:', err));
 }
 
+// === コピー機能の初期化 ===
+document.addEventListener('DOMContentLoaded', () => {
+  const btnCopyPrompt = document.getElementById('btn-copy-prompt');
+  if (btnCopyPrompt) {
+    btnCopyPrompt.addEventListener('click', () => {
+      const promptText = document.getElementById('ai-prompt-text').innerText;
+      if (!promptText) return;
+      
+      navigator.clipboard.writeText(promptText).then(() => {
+        const originalText = btnCopyPrompt.innerHTML;
+        btnCopyPrompt.innerHTML = '<i data-lucide="check"></i> コピーしました！';
+        if(window.lucide) lucide.createIcons();
+        setTimeout(() => {
+          btnCopyPrompt.innerHTML = originalText;
+          if(window.lucide) lucide.createIcons();
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    });
+  }
+});
+
+// ==========================================================================
+// Dynamic Gallery System
+// ==========================================================================
+function fetchGeneratedImages() {
+  const container = document.getElementById('gallery-grid-container');
+  if (!container) return;
+  
+  fetch('/api/latest-images')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.images) {
+        container.innerHTML = '';
+        data.images.forEach(imgData => {
+          const img = document.createElement('img');
+          img.className = 'gallery-thumbnail';
+          // Use cache buster for fresh load if needed, but not strictly necessary here
+          img.src = `/${imgData.path}?t=${imgData.mtime}`; 
+          img.alt = 'Generated Image';
+          img.addEventListener('click', () => {
+            if (typeof openLightbox === 'function') {
+              openLightbox(`/${imgData.path}`);
+            }
+          });
+          container.appendChild(img);
+        });
+      }
+    })
+    .catch(err => console.error('Failed to fetch generated images:', err));
+}
+
+if (btnReloadImages) {
+  btnReloadImages.addEventListener('click', () => {
+    fetchGeneratedImages();
+    showToast('画像を更新しました');
+  });
+}
+
+if (btnOpenFolder) {
+  btnOpenFolder.addEventListener('click', () => {
+    fetch('/api/open-folder', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          showToast('フォルダを開けませんでした: ' + data.error);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        showToast('通信エラーが発生しました');
+      });
+  });
+}
+
+// 初期ロード時にギャラリー取得
+fetchGeneratedImages();

@@ -250,6 +250,27 @@ body {
   margin-bottom: 20px;
 }
 
+/* ==========================================================================
+   Dynamic Gallery Thumbnails
+   ========================================================================== */
+.gallery-thumbnail {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  cursor: zoom-in;
+  border: 2px solid transparent;
+  transition: var(--transition-fast);
+  background: var(--bg-card-dark);
+}
+
+.gallery-thumbnail:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 4px 12px rgba(0, 240, 255, 0.2);
+}
+
+
 @media (max-width: 480px) {
   .poses-grid-container {
     grid-template-columns: 1fr;
@@ -632,6 +653,131 @@ body {
   min-height: 80px;
 }
 
+/* 世界観設定グループ */
+.world-setting-group {
+  margin-bottom: 24px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.world-setting-group textarea {
+  min-height: 50px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* キャラクター名簿（タブ） */
+.character-roster {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.roster-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-grow: 1;
+}
+
+.roster-tab {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.roster-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary);
+}
+
+.roster-tab.active {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  color: var(--bg-darker);
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(0, 240, 255, 0.2);
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  width: auto;
+}
+
+/* リファレンス画像アップロードエリア */
+.ref-image-upload-area {
+  width: 100px;
+  height: 100px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-fast);
+}
+
+.ref-image-upload-area:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.05);
+}
+
+.ref-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.ref-image-placeholder i {
+  width: 24px;
+  height: 24px;
+  color: var(--accent-cyan);
+}
+
+#ref-image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.btn-remove-ref {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+.btn-remove-ref:hover {
+  background: rgba(255, 50, 50, 0.8);
+}
+
 /* タグコンテナ */
 .tags-container {
   display: flex;
@@ -784,8 +930,54 @@ body {
   cursor: pointer;
 }
 
-.design-toggle-label input[type="radio"] {
+/* 登場キャラクター選択 (複数可) */
+.multi-char-selector {
+  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.multi-char-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--accent-cyan);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.char-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.char-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  transition: var(--transition-fast);
+}
+
+.char-checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.char-checkbox-label input[type="checkbox"] {
   accent-color: var(--accent-cyan);
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
@@ -909,6 +1101,31 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* トースト通知 */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--accent-green);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+  z-index: 1000;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .lightbox-actions {
   display: flex;
   gap: 16px;
@@ -938,4 +1155,49 @@ body {
     right: 10px;
     background: rgba(0, 0, 0, 0.5);
   }
+}
+
+/* Accordion Styles */
+.accordion {
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 8px;
+}
+.accordion:last-child {
+  border-bottom: none;
+}
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 12px 0;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+.accordion-header:hover {
+  opacity: 0.8;
+}
+.accordion-header h4 {
+  margin: 0 !important; /* Override existing h4 margin */
+}
+.accordion-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+  color: var(--color-text-secondary);
+}
+.accordion.open .accordion-icon {
+  transform: rotate(180deg);
+}
+.accordion-content {
+  display: none;
+  padding-bottom: 16px;
+  animation: fadeIn 0.3s ease;
+}
+.accordion.open .accordion-content {
+  display: block;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
