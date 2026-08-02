@@ -267,6 +267,7 @@ const categories = [
       { id: "light-cinematic", name: "シネマティック" },
       { id: "format-16-9", name: "横長 (16:9)" },
       { id: "format-9-16", name: "縦長 (9:16)" },
+      { id: "format-reel-optimized", name: "縦長リール特化 (丸文字・中央揃え)" },
       { id: "format-1-1", name: "正方形 (1:1)" }
     ]
   }
@@ -288,7 +289,7 @@ let html = `<!DOCTYPE html>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <div class="layout-container">
+  <div class="app-main">
     <!-- 左カラム: プレビュー -->
     <main class="preview-section card">
       <div class="card-header">
@@ -318,7 +319,9 @@ let html = `<!DOCTYPE html>
           </button>
         </div>
       </div>
+    </main>
 
+    <div class="right-column" style="display: flex; flex-direction: column; gap: 24px;">
       <!-- 着せ替え＆アイテム選択スタジオ -->
       <section class="dressup-studio card">
         <div class="dressup-header">
@@ -479,7 +482,7 @@ html += `
           </div>
         </form>
       </section>
-    </main>
+    </div>
   </div>
 
   <!-- 非表示のキャンバス (画像結合用) -->

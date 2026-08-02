@@ -21,9 +21,9 @@ let state = {
     }
   ],
   slots: [
-    { src: 'references/test1_smartphone_salon_1_reels.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 },
-    { src: 'references/test1_smartphone_salon_2_reels.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 },
-    { src: 'references/test1_smartphone_salon_3_reels.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 }
+    { src: 'references/あい/hairdresser_reel_24_cropped.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 },
+    { src: 'references/あい/hairdresser_reel_25_cropped.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 },
+    { src: 'references/あい/hairdresser_reel_26_cropped.png', x: 0, y: 0, scale: 1.0, baseScale: 1.0 }
   ]
 };
 
@@ -328,6 +328,77 @@ function setupLightbox() {
       sourceImage.src = img.src;
     });
   }
+
+  const dlCropBtn = document.getElementById('btn-lightbox-download-crop');
+  if (dlCropBtn) {
+    dlCropBtn.addEventListener('click', () => {
+      const img = document.getElementById('lightbox-img');
+      const gridRatio = state.aspectRatio || '1-1';
+      let targetRatio = 1;
+
+      if (gridRatio === '9-16') {
+        targetRatio = 9 / 16;
+      } else if (gridRatio === '3-4') {
+        targetRatio = 3 / 4;
+      } else if (gridRatio === '1-1') {
+        targetRatio = 1;
+      } else {
+        // グリッド設定がない場合はプロンプト側のタグをチェック
+        const activeChar = state.characters[state.activeCharId];
+        const tags = activeChar ? activeChar.activeTags || [] : [];
+        const formatTags = tags.filter(t => t.startsWith('format-'));
+        const formatStr = formatTags.length > 0 ? formatTags.join(', ') : '';
+        
+        if (formatStr.includes('9-16')) {
+          targetRatio = 9 / 16;
+        } else if (formatStr.includes('16-9')) {
+          targetRatio = 16 / 9;
+        }
+      }
+
+      let ratioName = '1x1';
+      if (targetRatio === 9/16) ratioName = '9x16';
+      if (targetRatio === 16/9) ratioName = '16x9';
+      if (targetRatio === 3/4) ratioName = '3x4';
+
+      if (targetRatio === 1) {
+        // 1:1の場合は通常ダウンロード
+        dlBtn.click();
+        return;
+      }
+
+      const sourceImage = new Image();
+      sourceImage.crossOrigin = "Anonymous";
+      sourceImage.onload = () => {
+        let sx = 0, sy = 0, sWidth = sourceImage.width, sHeight = sourceImage.height;
+
+        if (targetRatio < 1) {
+          // 9:16 (縦長)
+          sWidth = sHeight * targetRatio;
+          sx = (sourceImage.width - sWidth) / 2;
+        } else {
+          // 16:9 (横長)
+          sHeight = sWidth / targetRatio;
+          sy = (sourceImage.height - sHeight) / 2;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = sWidth;
+        canvas.height = sHeight;
+        const ctx = canvas.getContext('2d');
+
+        ctx.drawImage(sourceImage, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `generated_image_${ratioName}_${new Date().getTime()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+      sourceImage.src = img.src;
+    });
+  }
 }
 
 function openLightbox(src) {
@@ -464,6 +535,7 @@ function setupDragAndDrop() {
 }
 
 function setupZoom() {
+  if (!zoomSlider) return;
   zoomSlider.addEventListener('input', (e) => {
     const val = parseFloat(e.target.value);
     state.slots[activeSlotIndex].scale = val;
@@ -498,17 +570,19 @@ function setupZoom() {
   });
 
   // 位置リセット
-  btnReset.addEventListener('click', () => {
-    state.slots[activeSlotIndex].x = 0;
-    state.slots[activeSlotIndex].y = 0;
-    state.slots[activeSlotIndex].scale = 1.0;
-    
-    zoomSlider.value = 1.0;
-    zoomValueDisplay.textContent = '100%';
-    
-    updateSlotImageTransform(activeSlotIndex);
-    markAsUnsaved();
-  });
+  if (btnReset) {
+    btnReset.addEventListener('click', () => {
+      state.slots[activeSlotIndex].x = 0;
+      state.slots[activeSlotIndex].y = 0;
+      state.slots[activeSlotIndex].scale = 1.0;
+      
+      zoomSlider.value = 1.0;
+      zoomValueDisplay.textContent = '100%';
+      
+      updateSlotImageTransform(activeSlotIndex);
+      markAsUnsaved();
+    });
+  }
 }
 
 // ==========================================================================
@@ -541,6 +615,17 @@ function setupAspectSelectors() {
       }, 310); // CSS transition (0.3s) の完了を待つ
 
       markAsUnsaved();
+      // プロンプトも再生成して --ar パラメータを反映させる
+      if (typeof evaluateDressUpCombination === 'function') {
+        const aiMsgBox = document.getElementById('ai-prompt-msg');
+        const aiPromptText = document.getElementById('ai-prompt-text');
+        const promptScene = document.getElementById('prompt-scene');
+        const promptAction = document.getElementById('prompt-action');
+        const promptBg = document.getElementById('prompt-bg');
+        const designRadios = document.getElementsByName('design-spec');
+        const promptCount = document.getElementById('prompt-count');
+        evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptAction, promptBg, designRadios, promptCount);
+      }
     });
   });
 }
@@ -584,6 +669,7 @@ function resizeImageFile(file, maxWidth, maxHeight, callback) {
 // File Input & Image Loader
 // ==========================================================================
 function setupFileInput() {
+  if (!fileInput) return;
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -651,6 +737,7 @@ function updateTagsPreview(tagsString) {
 }
 
 function markAsUnsaved() {
+  if (!saveStatus) return;
   saveStatus.innerHTML = '<i data-lucide="alert-circle"></i> 未保存の変更あり';
   saveStatus.className = 'status-badge saving';
   if (window.lucide) {
@@ -659,6 +746,7 @@ function markAsUnsaved() {
 }
 
 function markAsSaved() {
+  if (!saveStatus) return;
   saveStatus.innerHTML = '<i data-lucide="cloud-check"></i> 保存済み';
   saveStatus.className = 'status-badge';
   if (window.lucide) {
@@ -958,6 +1046,7 @@ function setupCharacterManagement() {
 // HTML Canvas Model Sheet Export (Image Merging)
 // ==========================================================================
 function setupExport() {
+  if (!btnExport) return;
   btnExport.addEventListener('click', () => {
     exportModelSheet();
   });
@@ -1320,8 +1409,14 @@ function setupDressUpStudio() {
   });
 
   // 自由入力欄の変更時もプロンプトを再構築する
+  const promptTitle = document.getElementById('prompt-title');
+  const promptText = document.getElementById('prompt-text');
+  const promptSpeech = document.getElementById('prompt-speech');
+  if (promptTitle) promptTitle.addEventListener('input', triggerEvaluate);
   if (promptScene) promptScene.addEventListener('input', triggerEvaluate);
   if (promptAction) promptAction.addEventListener('input', triggerEvaluate);
+  if (promptText) promptText.addEventListener('input', triggerEvaluate);
+  if (promptSpeech) promptSpeech.addEventListener('input', triggerEvaluate);
   if (promptBg) promptBg.addEventListener('input', triggerEvaluate);
   if (designRadios) {
     designRadios.forEach(radio => radio.addEventListener('change', triggerEvaluate));
@@ -1353,6 +1448,12 @@ function showToast(message) {
 }
 
 function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptAction, promptBg, designRadios, promptCount) {
+  const titleEl = document.getElementById('prompt-title');
+  const textEl = document.getElementById('prompt-text');
+  const speechEl = document.getElementById('prompt-speech');
+  const customTitle = titleEl ? titleEl.value.trim() : '';
+  const customText = textEl ? textEl.value.trim() : '';
+  const customSpeech = speechEl ? speechEl.value.trim() : '';
   const customScene = promptScene ? promptScene.value.trim() : '';
   const customAction = promptAction ? promptAction.value.trim() : '';
   const customBg = promptBg ? promptBg.value.trim() : '';
@@ -1401,7 +1502,8 @@ function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptA
     const scenesBgs = tags.filter(t => t.startsWith('scene-') || t.startsWith('bg-'));
     const lights = tags.filter(t => t.startsWith('light-'));
     const formats = tags.filter(t => t.startsWith('format-'));
-    const props = tags.filter(t => !t.startsWith('hair-') && !t.startsWith('color-') && !t.startsWith('bangs-') && !t.startsWith('style-') && !t.startsWith('role-') && !t.startsWith('pattern-') && !t.startsWith('tone-') && !t.startsWith('emotion-') && !t.startsWith('angle-') && !t.startsWith('scene-') && !t.startsWith('bg-') && !t.startsWith('light-') && !t.startsWith('format-') && !tops.includes(t) && !bottoms.includes(t) && !aprons.includes(t));
+    const titleDesignIds = tags.filter(t => t.startsWith('title-'));
+    const props = tags.filter(t => !t.startsWith('hair-') && !t.startsWith('color-') && !t.startsWith('bangs-') && !t.startsWith('style-') && !t.startsWith('role-') && !t.startsWith('pattern-') && !t.startsWith('tone-') && !t.startsWith('emotion-') && !t.startsWith('angle-') && !t.startsWith('scene-') && !t.startsWith('bg-') && !t.startsWith('light-') && !t.startsWith('format-') && !t.startsWith('title-') && !tops.includes(t) && !bottoms.includes(t) && !aprons.includes(t));
 
     const outfitStr = [];
     if (tops.length) outfitStr.push(`トップス: ${document.querySelector(`[data-tag="${tops[0]}"]`)?.textContent}`);
@@ -1420,26 +1522,29 @@ function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptA
     const sceneBgTags = scenesBgs.map(s => document.querySelector(`[data-tag="${s}"]`)?.textContent);
     const lightTags = lights.map(l => document.querySelector(`[data-tag="${l}"]`)?.textContent);
     const formatTags = formats.map(f => document.querySelector(`[data-tag="${f}"]`)?.textContent);
+    const titleDesignTags = titleDesignIds.map(t => document.querySelector(`[data-tag="${t}"]`)?.textContent);
     
     tags.forEach(t => allUsedTags.push(t));
     
-    return { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags };
+    return { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags };
   };
 
   let globalAngleTags = new Set();
   let globalSceneBgTags = new Set();
   let globalLightTags = new Set();
   let globalFormatTags = new Set();
+  let globalTitleDesignTags = new Set();
 
   // 3. キャラクター情報（人数分）
   let charactersStr = '';
   if (selectedChars.length === 1) {
     const char = selectedChars[0];
-    const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags } = processCharTags(char);
+    const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags } = processCharTags(char);
     angleTags.forEach(a => globalAngleTags.add(a));
     sceneBgTags.forEach(s => globalSceneBgTags.add(s));
     lightTags.forEach(l => globalLightTags.add(l));
     formatTags.forEach(f => globalFormatTags.add(f));
+    if (titleDesignTags) titleDesignTags.forEach(t => globalTitleDesignTags.add(t));
     
     let finalHair = char.attrHair || '指定なし';
     if (colorStr) finalHair += ` (色変更: ${colorStr})`;
@@ -1460,11 +1565,12 @@ ${emotionStr ? `- 感情/表情: ${emotionStr}\n` : ''}${styleRoleStr ? `- 系�
     // 複数人の場合
     charactersStr = `\n【登場人物 (${selectedChars.length}人)】：`;
     selectedChars.forEach((char, index) => {
-      const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags } = processCharTags(char);
+      const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags } = processCharTags(char);
       angleTags.forEach(a => globalAngleTags.add(a));
       sceneBgTags.forEach(s => globalSceneBgTags.add(s));
       lightTags.forEach(l => globalLightTags.add(l));
       formatTags.forEach(f => globalFormatTags.add(f));
+      if (titleDesignTags) titleDesignTags.forEach(t => globalTitleDesignTags.add(t));
       
       let finalHair = char.attrHair || '指定なし';
       if (colorStr) finalHair += ` (色変更: ${colorStr})`;
@@ -1485,13 +1591,56 @@ ${emotionStr ? `- 感情/表情: ${emotionStr}\n` : ''}${styleRoleStr ? `- 系�
     charactersStr += '\n';
   }
 
-  // 4. シーン・動作・アングル
+  // 4. シーン・動作・テキスト・アングル
+  const gridRatio = state.aspectRatio || '1-1';
+  // 構図・アングル・画面比率
+  const formatArray = Array.from(globalFormatTags);
+  const formatStr = formatArray.length > 0 ? formatArray.join(', ') : '';
+  
+  const isReelOptimized = formatStr.includes('縦長リール特化 (丸文字・中央揃え)');
+  const isVertical = gridRatio === '9-16' || formatStr.includes('縦長 (9:16)') || isReelOptimized;
+  const isHorizontal = gridRatio === '16-9' || formatStr.includes('横長 (16:9)');
+
+  let titleDesignInstruction = '最も大きい文字サイズにし、テキストの背景（座布団やリボンなど）は付けずに文字のみを描画してください。';
+  if (globalTitleDesignTags.size > 0) {
+    titleDesignInstruction = `見た目の指定: ${Array.from(globalTitleDesignTags).join(', ')}`;
+  }
+  
+  let titleAdjustInstruction = '';
+  let dialogSizeInstruction = '文字サイズはタイトルの次に大きく（中サイズ）にしてください。';
+  let speechSizeInstruction = '文字サイズは一番小さくしてください。';
+  
+  if (isReelOptimized) {
+    titleAdjustInstruction = '（※重要: 画面上部の中央に配置してください。極太（ボールド）の丸文字（丸ゴシック）で1行で描画し、すべてのテキストも可愛らしい丸文字で統一すること）';
+    dialogSizeInstruction = 'タイトルの次に太い（中太・ミディアムボールド）丸文字で、タイトルの下の中央に配置してください。';
+    speechSizeInstruction = '小さめの吹き出しに、細い丸文字で配置してください。キャラクターの真正面（ど真ん中）を避け、少しだけ上下にずらして配置してください。';
+  } else if (isVertical) {
+    titleAdjustInstruction = '（※重要: InstagramリールのUIと被らない中央のセーフゾーンに配置してください。ただし、タイトルは極力太字（ボールド）で1行で描画し、文字サイズも小さくせず通常の横長キャンバス時と同じ大きさを保ってください。）';
+    dialogSizeInstruction = '文字サイズはタイトルの次に大きく（中サイズ）にし、吹き出しとは位置をずらして（例：キャラクターの左側や上部など）配置してください。';
+    speechSizeInstruction = '文字サイズは一番小さくし、セリフ・テキストとは重ならないよう反対側（例：キャラクターの右側や下部など）に位置をずらして配置してください。';
+  }
+  
+  const titleText = customTitle ? `\n【タイトル】：画面上部にテキストとして「${customTitle}」を配置してください。リールのお題を表示するようなイメージで、${titleDesignInstruction}${titleAdjustInstruction}` : '';
   const sceneText = customScene ? `\n【シーン】：${customScene}` : '';
   const actionText = customAction ? `\n【動作】：${customAction}` : '';
-  const angleText = globalAngleTags.size > 0 ? `\n【アングル/構図】：${Array.from(globalAngleTags).join(', ')}` : '';
+  const dialogText = customText ? `\n【セリフ・テキスト】：ふわっと浮かぶテキストとして「${customText}」を配置してください。${dialogSizeInstruction}` : '';
+  const speechText = customSpeech ? `\n【吹き出し】：吹き出しを描画し、その中にテキスト「${customSpeech}」を入れてください。${speechSizeInstruction}` : '';
+  
+  let angleInstruction = Array.from(globalAngleTags);
+  if (formatStr) angleInstruction.push(formatStr);
+  const angleText = angleInstruction.length > 0 ? `\n【アングル/構図】：${angleInstruction.join(', ')}` : '';
   
   // セーフゾーン（リール等での後加工用）の指示を常に追加
-  const safeZoneInstruction = '（※重要：後で枠を大きく切り抜くため、キャラクターは画面いっぱいに描かず、周囲に十分な余白（セーフゾーン）を確保して少し引きの構図で描いてください。頭や足先が画面の端に近すぎないようにすること）';
+  let safeZoneInstruction = '（※重要：後で枠を大きく切り抜くため、キャラクターは画面いっぱいに描かず、周囲に十分な余白（セーフゾーン）を確保して少し引きの構図で描いてください。頭や足先が画面の端に近すぎないようにすること）';
+  
+  if (isReelOptimized) {
+    safeZoneInstruction = '（※最重要構図：【キャラクターは画像の完全な中央（ど真ん中）】に配置してください。テキストを配置するためにキャラクターを左右に追いやることは厳禁です。Instagramリール用に上下左右を大きく切り抜くため、キャラクター全体を引きの構図（ズームアウト）にし、すべてのテキストも含めて【画面中央40%の幅のセーフゾーン】に完全に収めてください。見切れや端への配置は厳禁です。）';
+  } else if (isVertical) {
+    safeZoneInstruction = '（※最重要：Instagramリール用のため、上下左右の端にはUIアイコンやテキストが重なります。キャラクター全体をさらに小さく描き、テキストや吹き出しも含めてすべての重要な要素を「画面中央の狭いセーフゾーン」に凝縮する強い引きの構図（ズームアウト）にしてください。見切れや端への配置は厳禁です。）';
+  } else if (isHorizontal) {
+    safeZoneInstruction = '（※重要：キャラクター全体を小さめに描き、左右にテキストを配置するための空間を十分に確保した引きの構図（ズームアウト）にしてください。）';
+  }
+  
   const bgText = customBg ? `\n【背景】：${customBg} ${safeZoneInstruction}` : `\n【背景】：${safeZoneInstruction}`;
 
   // 5. デザイン指定
@@ -1504,7 +1653,21 @@ ${emotionStr ? `- 感情/表情: ${emotionStr}\n` : ''}${styleRoleStr ? `- 系�
   
   // プロンプトを結合
   const promptInstruction = `以下の内容でイラストを ${countText}枚 生成してください。`;
-  const combinedPrompt = `${promptInstruction}${styleStr}${charactersStr}${sceneText}${actionText}${angleText}${bgText}\n${designInstruction}`;
+  let combinedPrompt = `${promptInstruction}${titleText}${styleStr}${charactersStr}${sceneText}${actionText}${dialogText}${speechText}${angleText}${bgText}\n${designInstruction}`;
+  
+  // Midjourney / Niji Journey用のアスペクト比パラメータを最後に追加
+  let arParam = '';
+  if (isVertical) {
+    arParam = ' --ar 9:16';
+  } else if (isHorizontal) {
+    arParam = ' --ar 16:9';
+  } else if (gridRatio === '3-4') {
+    arParam = ' --ar 3:4';
+  }
+  
+  if (arParam) {
+    combinedPrompt += `\n\n${arParam}`;
+  }
   
   aiPromptText.innerText = combinedPrompt;
   

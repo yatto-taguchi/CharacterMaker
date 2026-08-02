@@ -253,6 +253,13 @@ body {
 /* ==========================================================================
    Dynamic Gallery Thumbnails
    ========================================================================== */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
 .gallery-thumbnail {
   width: 100%;
   aspect-ratio: 1;
@@ -332,14 +339,20 @@ body {
 
 .viewport.aspect-3-4 {
   aspect-ratio: 3 / 4;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .viewport.aspect-9-16 {
   aspect-ratio: 9 / 16;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .viewport.aspect-1-1 {
   aspect-ratio: 1 / 1;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 /* ドラッグ画像 */
