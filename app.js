@@ -1487,6 +1487,27 @@ function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptA
   const allUsedTags = [];
   
   // Helper to process tags for a character
+  // ヘルパー: タグ配列とランダムタグIDから4パターンに分岐してプロンプト文字列を返す
+  // パターン1: ランダムのみ → カテゴリ全体からランダム
+  // パターン2: ランダム + 他タグ → 選んだ中からランダムに1つ
+  // パターン3: タグ1つ(ランダムなし) → そのまま使用
+  // パターン4: タグ複数(ランダムなし) → 合わせた表現
+  const buildTagStr = (tags, randomTagId, excludeIds = []) => {
+    const hasRandom = tags.includes(randomTagId);
+    const specificTags = tags.filter(t => t !== randomTagId && !excludeIds.includes(t));
+    const specificLabels = specificTags.map(t =>
+      document.querySelector(`[data-tag="${t}"]`)?.textContent
+    ).filter(Boolean);
+
+    if (hasRandom && specificLabels.length === 0) {
+      return '🎲 ランダム (毎枚変更)';
+    } else if (hasRandom && specificLabels.length > 0) {
+      return `以下からランダムに1つ選んでください (毎枚変更): ${specificLabels.join(', ')}`;
+    } else {
+      return specificLabels.join(', ');
+    }
+  };
+
   const processCharTags = (char) => {
     const tags = char.activeTags || [];
     const tops = tags.filter(t => ['tshirt', 'blouse', 'knit', 'sheer', 'mode', 'casual', 'hoodie', 'cardigan', 'offshoulder', 'camisole', 'sweater', 'tracksuit', 'dress-shirt', 'tube-top', 'tank-top', 'leather-jacket', 'denim-jacket', 'kimono', 'maid-outfit', 'swimsuit-bikini', 'swimsuit-onepiece', 'random-top'].includes(t));
@@ -1510,15 +1531,19 @@ function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptA
     if (bottoms.length) outfitStr.push(`ボトムス: ${document.querySelector(`[data-tag="${bottoms[0]}"]`)?.textContent}`);
     if (aprons.length) outfitStr.push(`エプロン: ${document.querySelector(`[data-tag="${aprons[0]}"]`)?.textContent}`);
 
-    const itemStr = props.filter(p => p !== 'prop-scene-match').map(p => document.querySelector(`[data-tag="${p}"]`)?.textContent).join(', ');
+    // アイテム・ポーズ: シーンマッチタグを除外してbuildTagStrに渡す
+    const itemStr = buildTagStr(props, 'prop-random', ['prop-scene-match']);
     const hasItemSceneMatch = props.includes('prop-scene-match');
     const angleTags = angles.map(a => document.querySelector(`[data-tag="${a}"]`)?.textContent);
-    const hairStr = hairs.map(h => document.querySelector(`[data-tag="${h}"]`)?.textContent).join(', ');
+    // 髪型: buildTagStrで4パターン分岐
+    const hairStr = buildTagStr(hairs, 'hair-random');
     const colorStr = colors.map(c => document.querySelector(`[data-tag="${c}"]`)?.textContent).join(', ');
-    const bangStr = bangs.map(b => document.querySelector(`[data-tag="${b}"]`)?.textContent).join(', ');
+    // 前髪: buildTagStrで4パターン分岐
+    const bangStr = buildTagStr(bangs, 'bangs-random');
     const styleRoleStr = stylesRoles.map(s => document.querySelector(`[data-tag="${s}"]`)?.textContent).join(', ');
     const patternStr = patterns.map(p => document.querySelector(`[data-tag="${p}"]`)?.textContent).join(', ');
-    let emotionStr = emotions.filter(e => e !== 'emotion-scene-match').map(e => document.querySelector(`[data-tag="${e}"]`)?.textContent).join(', ');
+    // 感情: シーンマッチタグを除外してbuildTagStrに渡す
+    let emotionStr = buildTagStr(emotions, 'emotion-random', ['emotion-scene-match']);
     const hasEmotionSceneMatch = emotions.includes('emotion-scene-match');
     if (hasEmotionSceneMatch) {
       emotionStr = emotionStr ? `${emotionStr} + シーン・テキストの内容に最も合う表情を自然に選んでください` : `シーン・動作・テキストの内容に最も合う表情を自然に選んでください`;
