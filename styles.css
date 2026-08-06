@@ -904,6 +904,23 @@ body {
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
+.dressup-tag-scene {
+  border-color: rgba(255, 165, 0, 0.4);
+  color: #ffb347;
+}
+
+.dressup-tag-scene:hover {
+  background: rgba(255, 165, 0, 0.1);
+  border-color: rgba(255, 165, 0, 0.6);
+}
+
+.dressup-tag-scene.active {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.2), rgba(255, 100, 0, 0.15));
+  border-color: #ffb347;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.3);
+}
+
 /* ==========================================================================
    Custom Prompt Builder
    ========================================================================== */

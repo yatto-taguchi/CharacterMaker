@@ -1510,14 +1510,19 @@ function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptA
     if (bottoms.length) outfitStr.push(`ボトムス: ${document.querySelector(`[data-tag="${bottoms[0]}"]`)?.textContent}`);
     if (aprons.length) outfitStr.push(`エプロン: ${document.querySelector(`[data-tag="${aprons[0]}"]`)?.textContent}`);
 
-    const itemStr = props.map(p => document.querySelector(`[data-tag="${p}"]`)?.textContent).join(', ');
+    const itemStr = props.filter(p => p !== 'prop-scene-match').map(p => document.querySelector(`[data-tag="${p}"]`)?.textContent).join(', ');
+    const hasItemSceneMatch = props.includes('prop-scene-match');
     const angleTags = angles.map(a => document.querySelector(`[data-tag="${a}"]`)?.textContent);
     const hairStr = hairs.map(h => document.querySelector(`[data-tag="${h}"]`)?.textContent).join(', ');
     const colorStr = colors.map(c => document.querySelector(`[data-tag="${c}"]`)?.textContent).join(', ');
     const bangStr = bangs.map(b => document.querySelector(`[data-tag="${b}"]`)?.textContent).join(', ');
     const styleRoleStr = stylesRoles.map(s => document.querySelector(`[data-tag="${s}"]`)?.textContent).join(', ');
     const patternStr = patterns.map(p => document.querySelector(`[data-tag="${p}"]`)?.textContent).join(', ');
-    const emotionStr = emotions.map(e => document.querySelector(`[data-tag="${e}"]`)?.textContent).join(', ');
+    let emotionStr = emotions.filter(e => e !== 'emotion-scene-match').map(e => document.querySelector(`[data-tag="${e}"]`)?.textContent).join(', ');
+    const hasEmotionSceneMatch = emotions.includes('emotion-scene-match');
+    if (hasEmotionSceneMatch) {
+      emotionStr = emotionStr ? `${emotionStr} + シーン・テキストの内容に最も合う表情を自然に選んでください` : `シーン・動作・テキストの内容に最も合う表情を自然に選んでください`;
+    }
     
     const sceneBgTags = scenesBgs.map(s => document.querySelector(`[data-tag="${s}"]`)?.textContent);
     const lightTags = lights.map(l => document.querySelector(`[data-tag="${l}"]`)?.textContent);
@@ -1526,7 +1531,7 @@ function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptA
     
     tags.forEach(t => allUsedTags.push(t));
     
-    return { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags };
+    return { outfitStr, itemStr, hasItemSceneMatch, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags };
   };
 
   let globalAngleTags = new Set();
@@ -1539,7 +1544,7 @@ function evaluateDressUpCombination(aiMsgBox, aiPromptText, promptScene, promptA
   let charactersStr = '';
   if (selectedChars.length === 1) {
     const char = selectedChars[0];
-    const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags } = processCharTags(char);
+    const { outfitStr, itemStr, hasItemSceneMatch, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags } = processCharTags(char);
     angleTags.forEach(a => globalAngleTags.add(a));
     sceneBgTags.forEach(s => globalSceneBgTags.add(s));
     lightTags.forEach(l => globalLightTags.add(l));
@@ -1559,13 +1564,19 @@ ${emotionStr ? `- 感情/表情: ${emotionStr}\n` : ''}${styleRoleStr ? `- 系�
 
     if (outfitStr.length > 0) charactersStr += `- 服装: ${outfitStr.join(' / ')}\n`;
     if (patternStr) charactersStr += `- 服装の柄/色合い: ${patternStr}\n`;
-    if (itemStr.length > 0) charactersStr += `- アクション/アイテム: ${itemStr}\n`;
+    if (itemStr.length > 0 || hasItemSceneMatch) {
+      let actionLine = itemStr || '';
+      if (hasItemSceneMatch) {
+        actionLine = actionLine ? `${actionLine}, シーン・動作・テキストの内容に最も合うポーズやアイテムを自然に選んでください` : `シーン・動作・テキストの内容に最も合うポーズやアイテムを自然に選んでください`;
+      }
+      charactersStr += `- アクション/アイテム: ${actionLine}\n`;
+    }
     
   } else {
     // 複数人の場合
     charactersStr = `\n【登場人物 (${selectedChars.length}人)】：`;
     selectedChars.forEach((char, index) => {
-      const { outfitStr, itemStr, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags } = processCharTags(char);
+      const { outfitStr, itemStr, hasItemSceneMatch, angleTags, hairStr, colorStr, bangStr, styleRoleStr, patternStr, emotionStr, sceneBgTags, lightTags, formatTags, titleDesignTags } = processCharTags(char);
       angleTags.forEach(a => globalAngleTags.add(a));
       sceneBgTags.forEach(s => globalSceneBgTags.add(s));
       lightTags.forEach(l => globalLightTags.add(l));
@@ -1586,7 +1597,13 @@ ${emotionStr ? `- 感情/表情: ${emotionStr}\n` : ''}${styleRoleStr ? `- 系�
       if (char.refImage) charactersStr += `\n- 参考画像 (cref): \`${char.refImage}\` を使用`;
       if (outfitStr.length > 0) charactersStr += `\n- 服装: ${outfitStr.join(' / ')}`;
       if (patternStr) charactersStr += `\n- 服装の柄/色合い: ${patternStr}`;
-      if (itemStr.length > 0) charactersStr += `\n- アクション/アイテム: ${itemStr}`;
+      if (itemStr.length > 0 || hasItemSceneMatch) {
+        let actionLine = itemStr || '';
+        if (hasItemSceneMatch) {
+          actionLine = actionLine ? `${actionLine}, シーン・動作・テキストの内容に最も合うポーズやアイテムを自然に選んでください` : `シーン・動作・テキストの内容に最も合うポーズやアイテムを自然に選んでください`;
+        }
+        charactersStr += `\n- アクション/アイテム: ${actionLine}`;
+      }
     });
     charactersStr += '\n';
   }
