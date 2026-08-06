@@ -38,6 +38,14 @@
           <span id="zoom-value">100%</span>
         </div>
 
+        <!-- 画像比率選択ボタン -->
+        <div class="control-row" style="gap: 8px; flex-wrap: wrap;">
+          <label><i data-lucide="ratio"></i> 画像比率</label>
+          <button class="btn btn-aspect" data-ratio="3-4">3:4</button>
+          <button class="btn btn-aspect active" data-ratio="9-16">9:16</button>
+          <button class="btn btn-aspect" data-ratio="1-1">1:1</button>
+        </div>
+
         <div class="control-actions">
           <button id="btn-refresh" class="btn btn-primary" style="flex: 1;">
             <i data-lucide="refresh-cw"></i> 画像を更新
@@ -434,6 +442,18 @@
           </div>
 
           <div class="custom-input-group">
+            <div class="custom-input-row">
+              <label for="prompt-title">タイトル</label>
+              <input type="text" id="prompt-title" placeholder="例: 少しだけ作れる！、足りない薬剤を少しだけ作れる！ など">
+            </div>
+            <div class="custom-input-row">
+              <label for="prompt-text">セリフ・テキスト</label>
+              <input type="text" id="prompt-text" placeholder="例: ボタン一つで爆速！ など">
+            </div>
+            <div class="custom-input-row">
+              <label for="prompt-speech">吹き出し</label>
+              <input type="text" id="prompt-speech" placeholder="例: これ便利！、やったー！ など">
+            </div>
             <div class="custom-input-row">
               <label for="prompt-scene">シーン (場面)</label>
               <input type="text" id="prompt-scene" placeholder="例: 営業終了後の美容室、休日のカフェ など">
