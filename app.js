@@ -772,7 +772,8 @@ function saveData() {
     speech: document.getElementById('prompt-speech')?.value || '',
     scene: document.getElementById('prompt-scene')?.value || '',
     action: document.getElementById('prompt-action')?.value || '',
-    bg: document.getElementById('prompt-bg')?.value || ''
+    bg: document.getElementById('prompt-bg')?.value || '',
+    count: document.querySelector('#prompt-count-tags .dressup-tag.active')?.getAttribute('data-count') || '1'
   };
 
   try {
@@ -1364,6 +1365,17 @@ function updateDressUpStudioUI() {
         el.value = state.promptInputs[id];
       }
     });
+
+    if (state.promptInputs.count) {
+      const countTags = document.querySelectorAll('#prompt-count-tags .dressup-tag');
+      countTags.forEach(t => t.classList.remove('active'));
+      const targetCountTag = Array.from(countTags).find(t => t.getAttribute('data-count') === state.promptInputs.count);
+      if (targetCountTag) {
+        targetCountTag.classList.add('active');
+      } else if (countTags.length > 0) {
+        countTags[0].classList.add('active');
+      }
+    }
   }
 }
 
@@ -1410,6 +1422,7 @@ function setupDressUpStudio() {
     tag.addEventListener('click', () => {
       countTags.forEach(t => t.classList.remove('active'));
       tag.classList.add('active');
+      saveData();
       triggerEvaluate();
     });
   });
