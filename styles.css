@@ -1209,6 +1209,18 @@ body {
 }
 .accordion-header h4 {
   margin: 0 !important; /* Override existing h4 margin */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.selected-badge {
+  background: var(--accent-cyan);
+  color: var(--bg-darker);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 .accordion-icon {
   width: 20px;

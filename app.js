@@ -1326,6 +1326,9 @@ function updateDressUpStudioUI() {
   const activeChar = state.characters.find(c => c.id === state.activeCharId);
   const tags = document.querySelectorAll('.dressup-tag');
   
+  // バッジを一旦すべてリセット
+  document.querySelectorAll('.accordion-header .selected-badge').forEach(badge => badge.remove());
+  
   if (!activeChar || !activeChar.activeTags) {
     tags.forEach(tag => tag.classList.remove('active'));
     return;
@@ -1334,6 +1337,20 @@ function updateDressUpStudioUI() {
   tags.forEach(tag => {
     if (activeChar.activeTags.includes(tag.getAttribute('data-tag'))) {
       tag.classList.add('active');
+      
+      // 生成枚数タグ以外でバッジを付ける
+      if (!tag.closest('#prompt-count-tags')) {
+        const accordionItem = tag.closest('.accordion-item');
+        if (accordionItem) {
+          const header = accordionItem.querySelector('.accordion-header h4');
+          if (header && !header.querySelector('.selected-badge')) {
+            const badge = document.createElement('span');
+            badge.className = 'selected-badge';
+            badge.textContent = '選択済';
+            header.appendChild(badge);
+          }
+        }
+      }
     } else {
       tag.classList.remove('active');
     }
