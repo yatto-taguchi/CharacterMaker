@@ -766,6 +766,15 @@ function saveData() {
     activeChar.charMemo = charMemoInput.value;
   }
 
+  state.promptInputs = {
+    title: document.getElementById('prompt-title')?.value || '',
+    text: document.getElementById('prompt-text')?.value || '',
+    speech: document.getElementById('prompt-speech')?.value || '',
+    scene: document.getElementById('prompt-scene')?.value || '',
+    action: document.getElementById('prompt-action')?.value || '',
+    bg: document.getElementById('prompt-bg')?.value || ''
+  };
+
   try {
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
     markAsSaved();
@@ -1329,6 +1338,16 @@ function updateDressUpStudioUI() {
       tag.classList.remove('active');
     }
   });
+
+  if (state.promptInputs) {
+    const ids = ['title', 'text', 'speech', 'scene', 'action', 'bg'];
+    ids.forEach(id => {
+      const el = document.getElementById(`prompt-${id}`);
+      if (el && state.promptInputs[id] !== undefined) {
+        el.value = state.promptInputs[id];
+      }
+    });
+  }
 }
 
 function setupDressUpStudio() {
@@ -1427,16 +1446,22 @@ function setupDressUpStudio() {
     });
   });
 
-  // 自由入力欄の変更時もプロンプトを再構築する
+  // 自由入力欄の変更時もプロンプトを再構築・保存する
   const promptTitle = document.getElementById('prompt-title');
   const promptText = document.getElementById('prompt-text');
   const promptSpeech = document.getElementById('prompt-speech');
-  if (promptTitle) promptTitle.addEventListener('input', triggerEvaluate);
-  if (promptScene) promptScene.addEventListener('input', triggerEvaluate);
-  if (promptAction) promptAction.addEventListener('input', triggerEvaluate);
-  if (promptText) promptText.addEventListener('input', triggerEvaluate);
-  if (promptSpeech) promptSpeech.addEventListener('input', triggerEvaluate);
-  if (promptBg) promptBg.addEventListener('input', triggerEvaluate);
+  
+  const handleCustomInput = () => {
+    saveData();
+    triggerEvaluate();
+  };
+
+  if (promptTitle) promptTitle.addEventListener('input', handleCustomInput);
+  if (promptScene) promptScene.addEventListener('input', handleCustomInput);
+  if (promptAction) promptAction.addEventListener('input', handleCustomInput);
+  if (promptText) promptText.addEventListener('input', handleCustomInput);
+  if (promptSpeech) promptSpeech.addEventListener('input', handleCustomInput);
+  if (promptBg) promptBg.addEventListener('input', handleCustomInput);
   if (designRadios) {
     designRadios.forEach(radio => radio.addEventListener('change', triggerEvaluate));
   }
