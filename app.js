@@ -1340,7 +1340,7 @@ function updateDressUpStudioUI() {
       
       // 生成枚数タグ以外でバッジを付ける
       if (!tag.closest('#prompt-count-tags')) {
-        const accordionItem = tag.closest('.accordion-item');
+        const accordionItem = tag.closest('.accordion');
         if (accordionItem) {
           const header = accordionItem.querySelector('.accordion-header h4');
           if (header && !header.querySelector('.selected-badge')) {
