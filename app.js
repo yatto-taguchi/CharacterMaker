@@ -71,13 +71,13 @@ const refImageUploadArea = document.getElementById('ref-image-upload-area');
 // ==========================================================================
 // Event Listeners Initialization
 // ==========================================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) {
     window.lucide.createIcons();
   }
 
   // データの読み込みと初期描画
-  loadSavedData();
+  await loadSavedData();
   renderCharacterTabs();
   renderMultiCharCheckboxes();
   updateProfileFormFromActiveChar();
@@ -794,10 +794,27 @@ function saveData() {
   }, 500);
 }
 
-function loadSavedData() {
-  const saved = localStorage.getItem(STATE_KEY);
+async function loadSavedData() {
+  let saved = localStorage.getItem(STATE_KEY);
+
+  // localStorageにデータがない場合、full_state.jsonから復元を試みる
   if (!saved) {
-    // 初回起動時
+    try {
+      const res = await fetch('/full_state.json');
+      if (res.ok) {
+        const fallbackData = await res.text();
+        if (fallbackData && fallbackData.trim().length > 2) {
+          saved = fallbackData;
+          console.log('localStorageにデータがないため、full_state.jsonから復元しました');
+        }
+      }
+    } catch (e) {
+      console.warn('full_state.jsonの読み込みに失敗:', e);
+    }
+  }
+
+  if (!saved) {
+    // 初回起動時（full_state.jsonも存在しない場合）
     return;
   }
 
@@ -852,6 +869,8 @@ function loadSavedData() {
       }
     });
 
+    // full_state.jsonから復元した場合、localStorageにも保存しておく
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
     markAsSaved();
   } catch (e) {
     console.error('Failed to load state:', e);
